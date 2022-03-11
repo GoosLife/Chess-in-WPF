@@ -25,11 +25,6 @@ namespace Chess
             p.Width = 20;
             p.Height = 20;
 
-            // TODO: This should probably be in a method for placing the sprite on the board.
-            Canvas.SetTop(p, 20);
-            Canvas.SetLeft(p, 20);
-            Canvas.SetZIndex(p, 10);
-
             return p;
         }
     }
