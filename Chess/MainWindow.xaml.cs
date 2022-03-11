@@ -20,9 +20,18 @@ namespace Chess
     /// </summary>
     public partial class MainWindow : Window
     {
+        Board b;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            b = new Board();
+
+            foreach (Square s in b.Squares)
+            {
+                CanvasMain.Children.Add(s.Sprite);
+            }
 
             List<Ellipse> pawns = new List<Ellipse>();
 
