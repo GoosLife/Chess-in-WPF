@@ -10,14 +10,18 @@ using System.Windows.Shapes;
 namespace Chess
 {
     /// <summary>
-    /// NOTE: Squares must be iterated from 1-8, because it resembles
-    /// the way squares are counted in real-life games of chess.
-    ///   Alternatively, A1 would be Rank 0, File 0,
-    /// and attempting to move a piece from, say, B1-B5 would be done 
-    /// by moving it from File 0 to File 4, which could get confusing.
+    /// NOTE: Squares must be iterated from 1-8, because it makes
+    /// it easier to multiply the rank/file of the square with 100
+    /// to fetch both its location and coordinates.
     /// </summary>
     internal class Square
     {
+        /// <summary>
+        /// The size of each individual square.
+        /// Default: 100.
+        /// </summary>
+        public static int Size { get; set; }
+
         /// <summary>
         /// INT from 1-8 representing the rank of the square.
         /// In algebraic notation, this is denoted by a letter (A-H).
@@ -42,6 +46,8 @@ namespace Chess
         /// </summary>
         public Rectangle Sprite { get; set; }
 
+        public Piece? Piece { get; set; }
+
         public Square(int rank, int file)
         {
             Rank = rank;
@@ -49,6 +55,8 @@ namespace Chess
             Color = AssignColor();
 
             Sprite = CreateSprite();
+
+            Size = 100;
         }
 
         private int AssignColor()
@@ -90,7 +98,7 @@ namespace Chess
             }
             else
             {
-                s.Fill = Brushes.Black;
+                s.Fill = Brushes.Brown;
             }
 
             s.Width = 100;
