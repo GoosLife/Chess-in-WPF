@@ -140,17 +140,16 @@ namespace Chess
                 + Square.Size / 2
                 - Piece.SpriteSize / 2;
 
+            if ((topPos < minPos || topPos > maxPos) || (leftPos < minPos || leftPos > maxPos) || isCancel)
+            {
+                topPos = origSquare.Y;
+                leftPos = origSquare.X;
+            }
+
             // Check move legality and update logic
             if (!isCancel)
             {
                 isCancel = !Piece.DebugIsMoveLegal(b, origSquare.X, origSquare.Y, leftPos, topPos);
-            }
-
-            if ((topPos < minPos || topPos > maxPos) || (leftPos < minPos || leftPos > maxPos)
-                || isCancel)
-            {
-                topPos = origSquare.Y;
-                leftPos = origSquare.X;
             }
 
             Canvas.SetTop(dragObject, topPos);
