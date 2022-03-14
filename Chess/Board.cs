@@ -62,6 +62,8 @@ namespace Chess
                     squareIterator++;
                 }
             }
+
+            Square.SetupPieces(Squares);
         }
 
     }
