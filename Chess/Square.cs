@@ -42,25 +42,6 @@ namespace Chess
         public int Color { get; set; }
 
         /// <summary>
-        /// The piece of a square.
-        /// 0 = BLANK
-        /// 1 = WHITE PAWN
-        /// 2 = WHITE BISHOP
-        /// 3 = WHITE KNIGHT
-        /// 4 = WHITE ROOK
-        /// 5 = WHITE QUEEN
-        /// 6 = WHITE KING
-        /// 
-        /// 11 = BLACK PAWN
-        /// 12 = BLACK BISHOP
-        /// 13 = BLACK KNIGHT
-        /// 14 = BLACK ROOK
-        /// 15 = BLACK QUEEN
-        /// 16 = BLACK KING
-        /// </summary>
-        public int Piece { get; set; }
-
-        /// <summary>
         /// The graphical representation of a square.
         /// </summary>
         public Rectangle Sprite { get; set; }
@@ -76,28 +57,6 @@ namespace Chess
             Sprite = CreateSprite();
 
             Size = 100;
-        }
-
-        /// <summary>
-        /// Sets up initial piece positions
-        /// </summary>
-        /// <returns></returns>
-        public static void SetupPieces(Square[] squares)
-        {
-            List<int> initialPositions = new List<int>() { 4, 3, 2, 5, 6, 2, 3, 4,
-                                                           1, 1, 1, 1, 1, 1, 1, 1,
-                                                           0, 0, 0, 0, 0, 0, 0, 0,
-                                                           0, 0, 0, 0, 0, 0, 0, 0,
-                                                           0, 0, 0, 0, 0, 0, 0, 0,
-                                                           0, 0, 0, 0, 0, 0, 0, 0,
-                                                           11, 11, 11, 11, 11, 11, 11, 11,
-                                                           14, 13, 12, 15, 16, 12, 13, 14 };
-
-            for (int i = 0; i < squares.Length; i++)
-            {
-                squares[i].Piece = initialPositions[i];
-                squares[i].Sprite.Tag = initialPositions[i];
-            }
         }
 
         /// <summary>
