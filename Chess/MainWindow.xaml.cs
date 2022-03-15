@@ -40,6 +40,8 @@ namespace Chess
         public static UIElement clickObject = null;
         public static UIElement dragObject = null;
         public static Point offset;
+
+        bool isCancel;
         
         // The square that a dragged piece was taken from. Snaps back to this square, when user attempts to place
         // the piece outside of the board.
@@ -95,6 +97,18 @@ namespace Chess
             CanvasMain.CaptureMouse();
         }
 
+        private void CanvasMain_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Immediately cancel the move if the user presses the right button
+            if (e.ChangedButton == MouseButton.Right)
+            {
+                isCancel = true;
+                SnapToSquare(sender, e, true);
+                dragObject = null;
+                this.CanvasMain.ReleaseMouseCapture();
+            }
+        }
+
         private void CanvasMain_PreviewMouseMove(object sender, MouseEventArgs e)
         {
             if (dragObject == null)
@@ -106,14 +120,16 @@ namespace Chess
 
         private void CanvasMain_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            Trace.WriteLine(e.ChangedButton == MouseButton.Left);
+            if (!isCancel)
+            {
+                isCancel = (e.ChangedButton == MouseButton.Right);
 
-            bool isCancel = (e.ChangedButton == MouseButton.Right);
+                SnapToSquare(sender, e, isCancel);
 
-            SnapToSquare(sender, e, isCancel);
-
-            dragObject = null;
-            this.CanvasMain.ReleaseMouseCapture();
+                dragObject = null;
+                this.CanvasMain.ReleaseMouseCapture();
+            }
+            isCancel = false;
         }
 
         /// <summary>
@@ -130,26 +146,29 @@ namespace Chess
 
             if (dragObject == null)
                 return;
-            var position = e.GetPosition(sender as IInputElement);
+            var position = e.GetPosition(sender as IInputElement) - offset;
 
             // find nearest square
-            double topPos = Math.Floor(position.Y / 100d) * 100
+            double topPos = Math.Round(position.Y / 100d) * 100
                 + Square.Size / 2
                 - Piece.SpriteSize / 2;
-            double leftPos = Math.Floor(position.X / 100d) * 100
+            double leftPos = Math.Round((position.X - 32) / 100d) * 100
                 + Square.Size / 2
                 - Piece.SpriteSize / 2;
+
+            var newSquareIndex = ((int)(leftPos / 100 - 1) + (8 * (int)(topPos / 100 - 1)));
+            Coordinate newSquareCoords = (Coordinate)newSquareIndex;
+
+            // Check move legality and update logic
+            if (!isCancel)
+            {
+                isCancel = !BitBoards.MakeMove(b, origSquare.X, origSquare.Y, leftPos, topPos);
+            }
 
             if ((topPos < minPos || topPos > maxPos) || (leftPos < minPos || leftPos > maxPos) || isCancel)
             {
                 topPos = origSquare.Y;
                 leftPos = origSquare.X;
-            }
-
-            // Check move legality and update logic
-            if (!isCancel)
-            {
-                isCancel = !Piece.DebugIsMoveLegal(b, origSquare.X, origSquare.Y, leftPos, topPos);
             }
 
             Canvas.SetTop(dragObject, topPos);
@@ -165,15 +184,9 @@ namespace Chess
             DrawQueens();
             DrawKings();
         }
-
-        /// <summary>
-        /// Draw pawns
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="squareIterator"></param>
         public void DrawPawns()
         {
-            string whitePawns = BitBoards.BitBoardAsBinary(b.BitBoards.WhitePawns); // DEBUG: CHANGE TO PAWNS
+            string whitePawns = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhitePawns"]);
             int squareIterator = 0;
 
             foreach (char c in whitePawns)
@@ -195,14 +208,14 @@ namespace Chess
                     CanvasMain.Children.Add(p.Sprite);
 
                     // Give piece to square
-                    p.Square = b.SquareDict[(Coordinates)squareIterator];
+                    p.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = p;
                 }
                 // Check next square
                 squareIterator++;
             }
 
-            string blackPawns = BitBoards.BitBoardAsBinary(b.BitBoards.BlackPawns);
+            string blackPawns = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackPawns"]);
             squareIterator = 0;
 
             foreach (char c in blackPawns)
@@ -224,17 +237,16 @@ namespace Chess
                     CanvasMain.Children.Add(p.Sprite);
 
                     // Give piece to square
-                    p.Square = b.SquareDict[(Coordinates)squareIterator];
+                    p.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = p;
                 }
                 // Check next square
                 squareIterator++;
             }
         }
-
         public void DrawRooks()
         {
-            string whiteRooks = BitBoards.BitBoardAsBinary(b.BitBoards.WhiteRooks); // DEBUG: CHANGE TO PAWNS
+            string whiteRooks = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteRooks"]);
             int squareIterator = 0;
 
             foreach (char c in whiteRooks)
@@ -256,15 +268,14 @@ namespace Chess
                     CanvasMain.Children.Add(r.Sprite);
 
                     // Give piece to square
-                    r.Square = b.SquareDict[(Coordinates)squareIterator];
+                    r.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = r;
                 }
                 // Check next square
                 squareIterator++;
             }
 
-            string blackRooks = BitBoards.BitBoardAsBinary(b.BitBoards.BlackRooks);
-            Trace.Write(BitBoards.BitBoardAsBinaryMatrix(b.BitBoards.BlackRooks));
+            string blackRooks = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackRooks"]);
             squareIterator = 0;
 
             foreach (char c in blackRooks)
@@ -286,17 +297,16 @@ namespace Chess
                     CanvasMain.Children.Add(r.Sprite);
 
                     // Give piece to square
-                    r.Square = b.SquareDict[(Coordinates)squareIterator];
+                    r.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = r;
                 }
                 // Check next square
                 squareIterator++;
             }
         }
-
         public void DrawKnights()
         {
-            string whiteKnights = BitBoards.BitBoardAsBinary(b.BitBoards.WhiteKnights); // DEBUG: CHANGE TO PAWNS
+            string whiteKnights = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteKnights"]);
             int squareIterator = 0;
 
             foreach (char c in whiteKnights)
@@ -318,14 +328,14 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinates)squareIterator];
+                    k.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = k;
                 }
                 // Check next square
                 squareIterator++;
             }
 
-            string blackKnights = BitBoards.BitBoardAsBinary(b.BitBoards.BlackKnights);
+            string blackKnights = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackKnights"]);
             squareIterator = 0;
 
             foreach (char c in blackKnights)
@@ -347,17 +357,16 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinates)squareIterator];
+                    k.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = k;
                 }
                 // Check next square
                 squareIterator++;
             }
         }
-
         public void DrawBishops()
         {
-            string whiteBishops = BitBoards.BitBoardAsBinary(b.BitBoards.WhiteBishops); // DEBUG: CHANGE TO PAWNS
+            string whiteBishops = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteBishops"]);
             int squareIterator = 0;
 
             foreach (char c in whiteBishops)
@@ -379,14 +388,14 @@ namespace Chess
                     CanvasMain.Children.Add(b.Sprite);
 
                     // Give piece to square
-                    b.Square = this.b.SquareDict[(Coordinates)squareIterator];
+                    b.Square = this.b.SquareDict[(Coordinate)squareIterator];
                     this.b.Squares[squareIterator].Piece = b;
                 }
                 // Check next square
                 squareIterator++;
             }
 
-            string blackBishops = BitBoards.BitBoardAsBinary(b.BitBoards.BlackBishops);
+            string blackBishops = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackBishops"]);
             squareIterator = 0;
 
             foreach (char c in blackBishops)
@@ -408,17 +417,16 @@ namespace Chess
                     CanvasMain.Children.Add(b.Sprite);
 
                     // Give piece to square
-                    b.Square = this.b.SquareDict[(Coordinates)squareIterator];
+                    b.Square = this.b.SquareDict[(Coordinate)squareIterator];
                     this.b.Squares[squareIterator].Piece = b;
                 }
                 // Check next square
                 squareIterator++;
             }
         }
-
         public void DrawQueens()
         {
-            string whiteQueens = BitBoards.BitBoardAsBinary(b.BitBoards.WhiteQueens); // DEBUG: CHANGE TO PAWNS
+            string whiteQueens = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteQueens"]);
             int squareIterator = 0;
 
             foreach (char c in whiteQueens)
@@ -440,14 +448,14 @@ namespace Chess
                     CanvasMain.Children.Add(q.Sprite);
 
                     // Give piece to square
-                    q.Square = b.SquareDict[(Coordinates)squareIterator];
+                    q.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = q;
                 }
                 // Check next square
                 squareIterator++;
             }
 
-            string blackQueens = BitBoards.BitBoardAsBinary(b.BitBoards.BlackQueens);
+            string blackQueens = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackQueens"]);
             squareIterator = 0;
 
             foreach (char c in blackQueens)
@@ -469,17 +477,16 @@ namespace Chess
                     CanvasMain.Children.Add(q.Sprite);
 
                     // Give piece to square
-                    q.Square = b.SquareDict[(Coordinates)squareIterator];
+                    q.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = q;
                 }
                 // Check next square
                 squareIterator++;
             }
         }
-
         public void DrawKings()
         {
-            string whiteKing = BitBoards.BitBoardAsBinary(b.BitBoards.WhiteKing); // DEBUG: CHANGE TO PAWNS
+            string whiteKing = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteKing"]);
             int squareIterator = 0;
 
             foreach (char c in whiteKing)
@@ -501,14 +508,14 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinates)squareIterator];
+                    k.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = k;
                 }
                 // Check next square
                 squareIterator++;
             }
 
-            string blackKing = BitBoards.BitBoardAsBinary(b.BitBoards.BlackKing);
+            string blackKing = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackKing"]);
             squareIterator = 0;
 
             foreach (char c in blackKing)
@@ -530,7 +537,7 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinates)squareIterator];
+                    k.Square = b.SquareDict[(Coordinate)squareIterator];
                     b.Squares[squareIterator].Piece = k;
                 }
                 // Check next square

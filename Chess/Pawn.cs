@@ -12,6 +12,7 @@ namespace Chess
     {
         public Pawn(double topPos, double leftPos, Color color)
         {
+            Type = PieceType.Pawn;
             Sprite = CreateSprite(topPos, leftPos, color);
             Color = color;
         }

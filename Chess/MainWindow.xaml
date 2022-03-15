@@ -10,6 +10,7 @@
         Title="MainWindow" Height="900" Width="1600">
     <Canvas x:Name="CanvasMain"
             Background="SteelBlue"
+            MouseDown="CanvasMain_MouseDown"
             PreviewMouseMove="CanvasMain_PreviewMouseMove"
             PreviewMouseUp="CanvasMain_PreviewMouseUp"/>
 </Window>

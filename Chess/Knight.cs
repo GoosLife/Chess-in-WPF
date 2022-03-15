@@ -12,6 +12,7 @@ namespace Chess
     {
         public Knight(double topPos, double leftPos, Color color)
         {
+            Type = PieceType.Knight;
             Sprite = CreateSprite(topPos, leftPos, color);
             Color = color;
         }

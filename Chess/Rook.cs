@@ -12,6 +12,7 @@ namespace Chess
     {
         public Rook(double topPos, double leftPos, Color color)
         {
+            Type = PieceType.Rook;
             Sprite = CreateSprite(topPos, leftPos, color);
             Color = color;
         }

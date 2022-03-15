@@ -12,6 +12,7 @@ namespace Chess
     {
         public Bishop(double topPos, double leftPos, Color color)
         {
+            Type = PieceType.Bishop;
             Sprite = CreateSprite(topPos, leftPos, color);
             Color = color;
         }
