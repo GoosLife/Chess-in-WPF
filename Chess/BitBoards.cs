@@ -252,8 +252,8 @@ namespace Chess
                 ulong to = (ulong)1 << (int)board.CoordinateValue[newSquareCoords];
                 ulong fromTo = from ^ to;
                 board.BitBoardDict[GetBitBoardByPiece(piece)] ^= fromTo;
-                Color pieceColor = piece.Color;
-                board.BitBoardDict[pieceColor.ToString() + "Pieces"] ^= fromTo;
+                string pieceColor = piece.Color.ToString();
+                board.BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
 
                 // remove opposing piece from the game if any
                 if (newSquare.Piece != null)
@@ -264,7 +264,7 @@ namespace Chess
                     board.BitBoardDict[GetBitBoardByPiece(newSquare.Piece)] ^= to;
 
                     string takenPieceColor = newSquare.Piece.Color.ToString();
-                    board.BitBoardDict[(~pieceColor).ToString() + "Pieces"] ^= to;
+                    board.BitBoardDict[takenPieceColor + "Pieces"] ^= to; // 
 
                     board.BitBoardDict["SquaresOccupied"] ^= from;
                     board.BitBoardDict["SquaresEmpty"] ^= from;
