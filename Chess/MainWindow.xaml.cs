@@ -86,6 +86,7 @@ namespace Chess
             {
                 isCancel = true;
                 SnapToSquare(sender, e, true);
+                Canvas.SetZIndex(dragObject, 100); // Reset dragged pieces' Z-index as it is placed back on the board.
                 dragObject = null;
                 this.CanvasMain.ReleaseMouseCapture();
             }
@@ -108,7 +109,10 @@ namespace Chess
 
                 SnapToSquare(sender, e, isCancel);
 
-                Canvas.SetZIndex(dragObject, 100); // Reset dragged pieces' Z-index as it is placed back on the board.
+                if (dragObject != null)
+                {
+                    Canvas.SetZIndex(dragObject, 100); // Reset dragged pieces' Z-index as it is placed back on the board.
+                }
 
                 dragObject = null;
                 this.CanvasMain.ReleaseMouseCapture();
