@@ -78,7 +78,10 @@ namespace Chess
         /// </summary>
         internal UInt64 SquaresOccupied;
 
-        internal Dictionary<string, UInt64> BitBoardDict;
+        /// <summary>
+        /// A dictionary containing all the bitboards used in the current game.
+        /// </summary>
+        internal static Dictionary<string, UInt64> BitBoardDict;
 
         public BitBoards()
         {
@@ -129,10 +132,10 @@ namespace Chess
             BitBoardDict.Add("SquaresEmpty", ~SquaresOccupied);
         }
 
-        public static Dictionary<string, UInt64> GetBitBoards()
+        public static Dictionary<string, UInt64> GenerateBitBoards()
         {
             BitBoards bbs = new BitBoards();
-            return bbs.BitBoardDict;
+            return BitBoardDict;
         }
 
         /// <summary>
@@ -187,7 +190,7 @@ namespace Chess
         /// <param name="board"></param>
         public void UpdateBitBoards(Board board)
         {
-            var dict = board.BitBoardDict;
+            var dict = BitBoardDict;
             dict["WhitePieces"] = dict["WhiteKing"] | dict["WhiteQueens"] |
                 dict["WhiteRooks"] | dict["WhiteBishops"] |
                 dict["WhiteKnights"] | dict["WhitePawns"];
@@ -195,6 +198,8 @@ namespace Chess
                 dict["BlackRooks"] | dict["BlackBishops"] |
                 dict["BlackKnights"] | dict["BlackPawns"];
         }
+
+        #region Move making process
 
         //*************
         //*MAKE A MOVE*
@@ -221,39 +226,31 @@ namespace Chess
             Coordinate oldSquareCoords = (Coordinate)oldSquareIndex;
             Coordinate newSquareCoords = (Coordinate)newSquareIndex;
 
+            Square newSquare = board.SquareDict[newSquareCoords];
             Square oldSquare = board.SquareDict[oldSquareCoords];
             Piece piece = oldSquare.Piece;
 
-            if (piece == null)
+            if ((newSquare.Piece != null && newSquare.Piece.Color == piece.Color) || piece.Color != board.Turn)
             {
                 return false;
             }
 
-            Square newSquare = board.SquareDict[newSquareCoords];
-
-            if (newSquare.Piece != null && newSquare.Piece.Color == piece.Color)
+            if (!MoveGenerator.IsPseudoLegal(board, oldSquare, newSquare))
             {
                 return false;
             }
             else
             {
-                bool isCapture = false;
-                ulong fromBoard = board.BitBoardDict["SquaresOccupied"];
-
-                // Move this piece from its previous square
-                // to its new square
-                oldSquare.Piece = null;
-                newSquare.Piece = piece;
-                piece.Square = newSquare;
+                ulong fromBoard = BitBoardDict["SquaresOccupied"];
 
                 // Update bitboards
 
-                ulong from = (ulong)1 << (int)board.CoordinateValue[oldSquareCoords];
-                ulong to = (ulong)1 << (int)board.CoordinateValue[newSquareCoords];
+                ulong from = (ulong)1 << (int)Board.CoordinateValue[oldSquareCoords];
+                ulong to = (ulong)1 << (int)Board.CoordinateValue[newSquareCoords];
                 ulong fromTo = from ^ to;
-                board.BitBoardDict[GetBitBoardByPiece(piece)] ^= fromTo;
+                BitBoardDict[GetBitBoardByPiece(piece)] ^= fromTo;
                 string pieceColor = piece.Color.ToString();
-                board.BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
+                BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
 
                 // remove opposing piece from the game if any
                 if (newSquare.Piece != null)
@@ -261,32 +258,43 @@ namespace Chess
                     newSquare.Piece.Sprite.Source = null;
                     newSquare.Piece.Square = null;
 
-                    board.BitBoardDict[GetBitBoardByPiece(newSquare.Piece)] ^= to;
+                    BitBoardDict[GetBitBoardByPiece(newSquare.Piece)] ^= to;
 
                     string takenPieceColor = newSquare.Piece.Color.ToString();
-                    board.BitBoardDict[takenPieceColor + "Pieces"] ^= to; // 
+                    BitBoardDict[takenPieceColor + "Pieces"] ^= to; // 
 
-                    board.BitBoardDict["SquaresOccupied"] ^= from;
-                    board.BitBoardDict["SquaresEmpty"] ^= from;
+                    BitBoardDict["SquaresOccupied"] ^= from;
+                    BitBoardDict["SquaresEmpty"] ^= from;
                 }
                 // Apply ^= fromto instead of ^= from, if no capture has taken place.
                 else
                 {
-                    board.BitBoardDict["SquaresOccupied"] ^= fromTo;
-                    board.BitBoardDict["SquaresEmpty"] ^= fromTo;
+                    BitBoardDict["SquaresOccupied"] ^= fromTo;
+                    BitBoardDict["SquaresEmpty"] ^= fromTo;
                 }
+
+                // Move this piece from its previous square
+                // to its new square
+                oldSquare.Piece = null;
+                newSquare.Piece = piece;
+                piece.Square = newSquare;
+
 
                 // DEBUG: Writes all the affected bitboards to output from debug
                 //Trace.WriteLine("From: \n" + BitBoardAsBinaryMatrix(from));
                 //Trace.WriteLine("To: \n" + BitBoardAsBinaryMatrix(to));
                 //Trace.WriteLine("FromTo: \n" + BitBoardAsBinaryMatrix(fromTo));
-                //Trace.WriteLine("PieceBB: \n" + BitBoardAsBinaryMatrix(board.BitBoardDict[GetBitBoardByPiece(piece)]));
-                //Trace.WriteLine("ColorBB: \n" + BitBoardAsBinaryMatrix(board.BitBoardDict[pieceColor + "Pieces"]));
-                //Trace.WriteLine("OccSq: \n" + BitBoardAsBinaryMatrix(board.BitBoardDict["SquaresOccupied"]));
-                //Trace.WriteLine("EmpSq: \n" + BitBoardAsBinaryMatrix(board.BitBoardDict["SquaresEmpty"]));
+                //Trace.WriteLine("PieceBB: \n" + BitBoardAsBinaryMatrix(BitBoardDict[GetBitBoardByPiece(piece)]));
+                //Trace.WriteLine("ColorBB: \n" + BitBoardAsBinaryMatrix(BitBoardDict[pieceColor + "Pieces"]));
+                //Trace.WriteLine("OccSq: \n" + BitBoardAsBinaryMatrix(BitBoardDict["SquaresOccupied"]));
+                //Trace.WriteLine("EmpSq: \n" + BitBoardAsBinaryMatrix(BitBoardDict["SquaresEmpty"]));
+
+                board.Turn = (Color)((int)board.Turn * -1);
 
                 return true;
             }
         }
+
+        #endregion
     }
 }

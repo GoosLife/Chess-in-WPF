@@ -34,6 +34,8 @@ namespace Chess
         /// </summary>
         public int File { get; set; }
 
+        public Coordinate Coordinate { get; set; }
+
         /// <summary>
         /// Color of the square.
         /// 0 = White
@@ -48,10 +50,11 @@ namespace Chess
 
         public Piece? Piece { get; set; }
 
-        public Square(int rank, int file)
+        public Square(int rank, int file, Coordinate coordinate)
         {
             Rank = rank;
             File = file;
+            Coordinate = coordinate;
             Color = AssignColor();
 
             Sprite = CreateSprite();

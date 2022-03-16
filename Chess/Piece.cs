@@ -12,8 +12,8 @@ namespace Chess
 {
     public enum Color
     {
-        White,
-        Black,
+        White = -1,
+        Black = 1,
     }
 
     public enum PieceType
@@ -44,7 +44,7 @@ namespace Chess
         /// </summary>
         public Color Color { get; set; }
 
-        public Square? Square { get; set; }
+        public Square Square { get; set; }
 
         public PieceType Type { get; set; }
 

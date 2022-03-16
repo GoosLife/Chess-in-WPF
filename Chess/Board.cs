@@ -28,7 +28,7 @@ namespace Chess
         /// </summary>
         public Dictionary<Coordinate, Square> SquareDict { get; set; }
 
-        public Dictionary<Coordinate, byte> CoordinateValue = new Dictionary<Coordinate, byte>()
+        public static Dictionary<Coordinate, byte> CoordinateValue = new Dictionary<Coordinate, byte>()
         {
             { Coordinate.A8, 63}, { Coordinate.B8, 62}, { Coordinate.C8, 61}, { Coordinate.D8, 60}, { Coordinate.E8, 59}, { Coordinate.F8, 58}, { Coordinate.G8, 57}, {Coordinate.H8, 56},
             { Coordinate.A7, 55}, { Coordinate.B7, 54}, { Coordinate.C7, 53}, { Coordinate.D7, 52}, { Coordinate.E7, 51}, { Coordinate.F7, 50}, { Coordinate.G7, 49}, {Coordinate.H7, 48},
@@ -45,15 +45,13 @@ namespace Chess
         /// </summary>
         public Square[] Squares;
 
-        /// <summary>
-        /// The bitboards representing the position of the board.
-        /// </summary>
-        public Dictionary<string, ulong> BitBoardDict { get; set; }
+        public Piece[] Pieces { get; set; } = new Piece[32];
+
+        public Color Turn { get; set; } = Color.White;
 
         public Board()
         {
             Squares = new Square[64];
-            BitBoardDict = BitBoards.GetBitBoards();
 
             SquareDict = new Dictionary<Coordinate, Square>();
 
@@ -64,7 +62,7 @@ namespace Chess
             {
                 for (int j = 1; j <= 8; j++)
                 {
-                    Square s = new Square(i, j);
+                    Square s = new Square(i, j, (Coordinate)squareIterator);
 
                     // TODO: This should probably be in a method for placing the sprite on the board.
                     Canvas.SetTop(s.Sprite, 100 * i);
@@ -75,6 +73,20 @@ namespace Chess
 
                     Squares[squareIterator] = s;
                     squareIterator++;
+                }
+            }
+        }
+
+        public void GetPieces()
+        {
+            int pieceCount = 0;
+
+            for (int i = 0; i < Squares.Length; i++)
+            {
+                if (Squares[i].Piece != null)
+                {
+                    Pieces[pieceCount] = Squares[i].Piece;
+                    pieceCount++;
                 }
             }
         }

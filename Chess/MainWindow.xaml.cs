@@ -28,6 +28,7 @@ namespace Chess
             InitializeComponent();
 
             b = new Board();
+            BitBoards.GenerateBitBoards();
 
             foreach (Square s in b.Squares)
             {
@@ -35,6 +36,13 @@ namespace Chess
             }
 
             DrawPieces();
+
+            b.GetPieces(); // Board retrieves a list of its own pieces.
+
+            foreach (Piece p in b.Pieces)
+            {
+                Trace.WriteLine(Canvas.GetZIndex(p.Sprite));
+            }
         }
 
         public static UIElement clickObject = null;
@@ -50,46 +58,20 @@ namespace Chess
         public void Piece_MouseDown(object sender, MouseButtonEventArgs e)
         {
             clickObject = (UIElement)sender;
-            BringToFront(CanvasMain, clickObject);
-        }
-
-        static public void BringToFront(Canvas pParent, UIElement pToMove)
-        {
-            try
-            {
-                int currentIndex = Canvas.GetZIndex(pToMove);
-                int zIndex = 0;
-                int maxZ = 0;
-                UIElement child;
-                for (int i = 0; i < pParent.Children.Count; i++)
-                {
-                    if (pParent.Children[i] is UIElement &&
-                        pParent.Children[i] != pToMove)
-                    {
-                        child = pParent.Children[i] as UIElement;
-                        zIndex = Canvas.GetZIndex(child);
-                        maxZ = Math.Max(maxZ, zIndex);
-                        if (zIndex > currentIndex)
-                        {
-                            Canvas.SetZIndex(child, zIndex - 1);
-                        }
-                    }
-                }
-                Canvas.SetZIndex(pToMove, maxZ);
-            }
-            catch (Exception ex)
-            {
-            }
         }
 
         public void Piece_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             dragObject = sender as UIElement;
 
+            Canvas.SetZIndex(dragObject, 1000); // Make sure dragged piece is always in front.
+
             origSquare.Y = Canvas.GetTop(dragObject);
             origSquare.X = Canvas.GetLeft(dragObject);
 
-            BringToFront(CanvasMain, dragObject);
+            // TODO:
+            // Calculate moves and show squares that can be moved to
+            // moveGenerator.SomeFunctionShowSquares(origSquare.Y, origSquare.X); // TODO: Maybe have a function that gets the square from the coordinates
 
             offset = e.GetPosition(CanvasMain);
             offset.Y -= Canvas.GetTop(dragObject);
@@ -126,6 +108,8 @@ namespace Chess
 
                 SnapToSquare(sender, e, isCancel);
 
+                Canvas.SetZIndex(dragObject, 100); // Reset dragged pieces' Z-index as it is placed back on the board.
+
                 dragObject = null;
                 this.CanvasMain.ReleaseMouseCapture();
             }
@@ -159,13 +143,20 @@ namespace Chess
             var newSquareIndex = ((int)(leftPos / 100 - 1) + (8 * (int)(topPos / 100 - 1)));
             Coordinate newSquareCoords = (Coordinate)newSquareIndex;
 
+            // Cancel move if it is out of bounds
+            if ((topPos < minPos || topPos > maxPos) || (leftPos < minPos || leftPos > maxPos))
+            {
+                isCancel = true;
+            }
+
             // Check move legality and update logic
             if (!isCancel)
             {
+                // Move has another chance to cancel if MakeMove returns false
                 isCancel = !BitBoards.MakeMove(b, origSquare.X, origSquare.Y, leftPos, topPos);
             }
 
-            if ((topPos < minPos || topPos > maxPos) || (leftPos < minPos || leftPos > maxPos) || isCancel)
+            if (isCancel) // reset coordinates as move can't be completed
             {
                 topPos = origSquare.Y;
                 leftPos = origSquare.X;
@@ -186,7 +177,7 @@ namespace Chess
         }
         public void DrawPawns()
         {
-            string whitePawns = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhitePawns"]);
+            string whitePawns = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["WhitePawns"]);
             int squareIterator = 0;
 
             foreach (char c in whitePawns)
@@ -215,7 +206,7 @@ namespace Chess
                 squareIterator++;
             }
 
-            string blackPawns = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackPawns"]);
+            string blackPawns = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["BlackPawns"]);
             squareIterator = 0;
 
             foreach (char c in blackPawns)
@@ -246,7 +237,7 @@ namespace Chess
         }
         public void DrawRooks()
         {
-            string whiteRooks = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteRooks"]);
+            string whiteRooks = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["WhiteRooks"]);
             int squareIterator = 0;
 
             foreach (char c in whiteRooks)
@@ -275,7 +266,7 @@ namespace Chess
                 squareIterator++;
             }
 
-            string blackRooks = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackRooks"]);
+            string blackRooks = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["BlackRooks"]);
             squareIterator = 0;
 
             foreach (char c in blackRooks)
@@ -306,7 +297,7 @@ namespace Chess
         }
         public void DrawKnights()
         {
-            string whiteKnights = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteKnights"]);
+            string whiteKnights = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["WhiteKnights"]);
             int squareIterator = 0;
 
             foreach (char c in whiteKnights)
@@ -335,7 +326,7 @@ namespace Chess
                 squareIterator++;
             }
 
-            string blackKnights = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackKnights"]);
+            string blackKnights = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["BlackKnights"]);
             squareIterator = 0;
 
             foreach (char c in blackKnights)
@@ -366,7 +357,7 @@ namespace Chess
         }
         public void DrawBishops()
         {
-            string whiteBishops = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteBishops"]);
+            string whiteBishops = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["WhiteBishops"]);
             int squareIterator = 0;
 
             foreach (char c in whiteBishops)
@@ -395,7 +386,7 @@ namespace Chess
                 squareIterator++;
             }
 
-            string blackBishops = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackBishops"]);
+            string blackBishops = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["BlackBishops"]);
             squareIterator = 0;
 
             foreach (char c in blackBishops)
@@ -426,7 +417,7 @@ namespace Chess
         }
         public void DrawQueens()
         {
-            string whiteQueens = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteQueens"]);
+            string whiteQueens = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["WhiteQueens"]);
             int squareIterator = 0;
 
             foreach (char c in whiteQueens)
@@ -455,7 +446,7 @@ namespace Chess
                 squareIterator++;
             }
 
-            string blackQueens = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackQueens"]);
+            string blackQueens = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["BlackQueens"]);
             squareIterator = 0;
 
             foreach (char c in blackQueens)
@@ -486,7 +477,7 @@ namespace Chess
         }
         public void DrawKings()
         {
-            string whiteKing = BitBoards.BitBoardAsBinary(b.BitBoardDict["WhiteKing"]);
+            string whiteKing = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["WhiteKing"]);
             int squareIterator = 0;
 
             foreach (char c in whiteKing)
@@ -515,7 +506,7 @@ namespace Chess
                 squareIterator++;
             }
 
-            string blackKing = BitBoards.BitBoardAsBinary(b.BitBoardDict["BlackKing"]);
+            string blackKing = BitBoards.BitBoardAsBinary(BitBoards.BitBoardDict["BlackKing"]);
             squareIterator = 0;
 
             foreach (char c in blackKing)
