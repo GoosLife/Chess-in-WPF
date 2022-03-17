@@ -39,10 +39,11 @@ namespace Chess
 
             b.GetPieces(); // Board retrieves a list of its own pieces.
 
-            foreach (Piece p in b.Pieces)
-            {
-                Trace.WriteLine(Canvas.GetZIndex(p.Sprite));
-            }
+            Ray.GenerateRays();
+            Trace.WriteLine(Ray.Rays[Ray.East][7]);
+
+            #region DEBUG
+            #endregion
         }
 
         public static UIElement clickObject = null;

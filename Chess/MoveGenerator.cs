@@ -56,6 +56,9 @@ namespace Chess
                 case PieceType.King:
                     return GetMovesForKing(piece);
 
+                case PieceType.Rook:
+                    return GetMovesForRook(piece);
+
                 default:
                     return 0;
             }
@@ -215,6 +218,44 @@ namespace Chess
 
             return kingValid;
 
+        }
+
+        #endregion
+
+        // TODO: Rook can currently move on top of and through all pieces.
+        #region Rook Move Generation
+
+        public static ulong GetMovesForRook(Piece piece)
+        {
+            // Rooks can move to all free squares directly north, east, south and west of its starting square.
+            ulong rookAttacks = GetRankAttacks(piece.Square.Coordinate) | GetFileAttacks(piece.Square.Coordinate);
+            return rookAttacks;
+        }
+
+        #endregion
+
+        #region Generate Moves Per Ray
+        
+        /// <summary>
+        /// Get all squares to the east/west of a given square.
+        /// </summary>
+        /// <param name="coordinate"></param>
+        /// <returns></returns>
+        private static ulong GetRankAttacks(Coordinate coordinate)
+        {
+            ulong attacks = Ray.Rays[Ray.East][Board.CoordinateValue[coordinate]] | Ray.Rays[Ray.West][Board.CoordinateValue[coordinate]];
+            return attacks;
+        }
+
+        /// <summary>
+        /// Get all squares to the north/south of a given square.
+        /// </summary>
+        /// <param name="coordinate"></param>
+        /// <returns></returns>
+        private static ulong GetFileAttacks(Coordinate coordinate)
+        {
+            ulong attacks = Ray.Rays[Ray.North][Board.CoordinateValue[coordinate]] | Ray.Rays[Ray.South][Board.CoordinateValue[coordinate]];
+            return attacks;
         }
 
         #endregion

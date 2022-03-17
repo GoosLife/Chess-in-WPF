@@ -143,7 +143,7 @@ namespace Chess
         /// </summary>
         /// <param name="input">The bitboard to turn into a binary string.</param>
         /// <returns>The bitboard in binary.</returns>
-        public static string BitBoardAsBinaryMatrix(UInt64 input)
+        public static string BinaryMatrix(UInt64 input)
         {
             // The base to convert to, i.e. binary
             int to = 2;
