@@ -84,9 +84,14 @@ namespace Chess
             // Immediately cancel the move if the user presses the right button
             if (e.ChangedButton == MouseButton.Right)
             {
+                
+                if (dragObject != null)
+                {
+                    Canvas.SetZIndex(dragObject, 100); // Reset dragged pieces' Z-index as it is placed back on the board.
+                }
+
                 isCancel = true;
                 SnapToSquare(sender, e, true);
-                Canvas.SetZIndex(dragObject, 100); // Reset dragged pieces' Z-index as it is placed back on the board.
                 dragObject = null;
                 this.CanvasMain.ReleaseMouseCapture();
             }

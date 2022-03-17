@@ -35,7 +35,9 @@ namespace Chess
         {
             switch (piece.Type)
             {
+                
                 case PieceType.Pawn:
+                
                     switch (piece.Color)
                     {
                         case Color.White:
@@ -43,11 +45,17 @@ namespace Chess
 
                         case Color.Black:
                             return GetMovesForBlackPawn(piece.Square.Coordinate);
+
                         default:
                             return 0;
                     }
+                
                 case PieceType.Knight:
                     return GetMovesForKnight(piece);
+
+                case PieceType.King:
+                    return GetMovesForKing(piece);
+
                 default:
                     return 0;
             }
@@ -156,7 +164,57 @@ namespace Chess
 
             // Get name of color to pass to bitboard dictionary.
             string color = piece.Color.ToString();
-            return knightValid & ~BitBoards.BitBoardDict[color + "Pieces"]; // Knight can only move to squares NOT containing pieces of its own color.
+            knightValid = knightValid & ~BitBoards.BitBoardDict[color + "Pieces"]; // Knight can only move to squares NOT containing pieces of its own color.
+
+            return knightValid;
+        }
+
+        #endregion
+
+        // TODO: Castling
+        #region King Move Generation
+
+        public static ulong GetMovesForKing(Piece piece)
+        {
+            /* 
+             
+             King move naming visualized:
+             123
+             4K5
+             678
+             
+             */
+
+            // The kings starting position
+            Coordinate from = piece.Square.Coordinate;
+
+            // Bitboard representing the current position
+            ulong startingPos = (ulong)1 << Board.CoordinateValue[from];
+
+            // If the king is on the left or rightmost file, he can't move further left or right.
+            ulong kingClipFileA = startingPos & Constants.EmptyFileA;
+            ulong kingClipFileH = startingPos & Constants.EmptyFileH;
+
+            // Generate moves
+            ulong spot1 = kingClipFileA << 9;
+            ulong spot2 = startingPos << 8;
+            ulong spot3 = kingClipFileH << 7;
+            ulong spot4 = kingClipFileH << 1;
+
+            ulong spot5 = kingClipFileA >> 1;
+            ulong spot6 = startingPos >> 7;
+            ulong spot7 = kingClipFileA >> 8;
+            ulong spot8 = kingClipFileA >> 9;
+
+            ulong kingValid = spot1 | spot2 | spot3 | spot4 |
+                              spot5 | spot6 | spot7 | spot8;
+
+            // Get name of color to pass to bitboard dictionary.
+            string color = piece.Color.ToString();
+            kingValid = kingValid & ~BitBoards.BitBoardDict[color + "Pieces"];
+
+            return kingValid;
+
         }
 
         #endregion
