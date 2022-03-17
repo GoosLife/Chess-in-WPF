@@ -42,5 +42,25 @@ namespace Chess
         public const ulong BlackPawns = 71776119061217280;
 
         #endregion
+
+        #region BitBoard Names
+        public const string bbWhiteKing = "WhiteKing";
+        public const string bbWhiteQueens = "WhiteQueens";
+        public const string bbWhiteRooks = "WhiteRooks";
+        public const string bbWhiteBishops = "WhiteBishops";
+        public const string bbWhiteKnights = "WhiteKnights";
+        public const string bbWhitePawns = "WhitePawns";
+        public const string bbWhitePieces = "WhitePieces";
+
+        public const string bbBlackKing = "BlackKing";
+        public const string bbBlackQueens = "BlackQueens";
+        public const string bbBlackRooks = "BlackRooks";
+        public const string bbBlackBishops = "BlackBishops";
+        public const string bbBlackKnights = "BlackKnights";
+        public const string bbBlackPawns = "BlackPawns";
+        public const string bbBlackPieces = "BlackPieces";
+
+        public const string bbSquaresOccupied = "SquaresOccupied";
+        #endregion
     }
 }

@@ -227,34 +227,62 @@ namespace Chess
 
         public static ulong GetMovesForRook(Piece piece)
         {
+            // The rooks starting position
+            Coordinate from = piece.Square.Coordinate;
+
+            // The value of said square
+            byte square = Board.CoordinateValue[from];
+
             // Rooks can move to all free squares directly north, east, south and west of its starting square.
-            ulong rookAttacks = GetRankAttacks(piece.Square.Coordinate) | GetFileAttacks(piece.Square.Coordinate);
+            ulong rookAttacks = GetRankMoves(square) | GetFileMoves(square);
             return rookAttacks;
         }
 
         #endregion
 
-        #region Generate Moves Per Ray
-        
+        #region Generate Positive And Negative Moves
+        private static ulong GetPositiveMoves(int rayDirection, byte square)
+        {
+            ulong moves = Ray.Rays[rayDirection][square];
+            Trace.WriteLine("Initial moveset: \n" + BitBoards.BinaryMatrix(moves));
+            ulong blocker = moves & BitBoards.BitBoardDict[Constants.bbSquaresOccupied]; // moves on an empty board AND'ed with the current bitboard of all pieces.
+
+            // if this direction is eventually blocked off by a piece.
+            if (blocker != 0)
+            {
+                // using forward bitscan to find the least significant bit
+                int blockerSquare = BitHelper.GetLeastSignificant1Bit(blocker);
+
+                moves = moves ^ Ray.Rays[rayDirection][blockerSquare];
+            }
+
+            return moves;
+        }
+        #endregion
+
+        #region Generate Moves Per Direction
+
         /// <summary>
         /// Get all squares to the east/west of a given square.
         /// </summary>
         /// <param name="coordinate"></param>
         /// <returns></returns>
-        private static ulong GetRankAttacks(Coordinate coordinate)
+        private static ulong GetRankMoves(byte square)
         {
-            ulong attacks = Ray.Rays[Ray.East][Board.CoordinateValue[coordinate]] | Ray.Rays[Ray.West][Board.CoordinateValue[coordinate]];
+            ulong westMoves = GetPositiveMoves(Ray.West, square);
+            ulong attacks = Ray.Rays[Ray.East][square] | westMoves; 
             return attacks;
         }
 
         /// <summary>
         /// Get all squares to the north/south of a given square.
         /// </summary>
-        /// <param name="coordinate"></param>
+        /// <param name="square"></param>
         /// <returns></returns>
-        private static ulong GetFileAttacks(Coordinate coordinate)
+        private static ulong GetFileMoves(byte square)
         {
-            ulong attacks = Ray.Rays[Ray.North][Board.CoordinateValue[coordinate]] | Ray.Rays[Ray.South][Board.CoordinateValue[coordinate]];
+            ulong northMoves = GetPositiveMoves(Ray.North, square);
+            ulong attacks = northMoves | Ray.Rays[Ray.South][square];
             return attacks;
         }
 

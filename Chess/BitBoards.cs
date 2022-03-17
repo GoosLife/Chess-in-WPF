@@ -15,6 +15,8 @@ namespace Chess
     /// </summary>
     internal class BitBoards
     {
+
+        #region BitBoard Variables
         /// <summary>
         /// Bitboard determining the position of the white king.
         /// </summary>
@@ -77,6 +79,7 @@ namespace Chess
         /// Determines all occupied squares
         /// </summary>
         internal UInt64 SquaresOccupied;
+        #endregion
 
         /// <summary>
         /// A dictionary containing all the bitboards used in the current game.
