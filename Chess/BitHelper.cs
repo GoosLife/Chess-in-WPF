@@ -27,6 +27,7 @@ namespace Chess
 
         public static int GetLeastSignificant1Bit(ulong value)
         {
+            // Could also just be value &= -value
             value &= ~(value - 1);
 
             // Get the board index value of the ls1b square by finding the exponent of the least significant bits value

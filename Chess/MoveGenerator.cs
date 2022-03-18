@@ -59,11 +59,14 @@ namespace Chess
                 case PieceType.Rook:
                     return GetMovesForRook(piece);
 
+                case PieceType.Bishop:
+                    return GetMovesForBishop(piece);
+
                 default:
                     return 0;
             }
         }
-        
+
         // TODO: En pessant
         // TODO: Promotion
         #region Pawn Move Generation
@@ -233,8 +236,31 @@ namespace Chess
             byte square = Board.CoordinateValue[from];
 
             // Rooks can move to all free squares directly north, east, south and west of its starting square.
-            ulong rookAttacks = GetRankMoves(square) | GetFileMoves(square);
-            return rookAttacks;
+            ulong rookValid = GetRankMoves(square) | GetFileMoves(square);
+            return rookValid;
+        }
+
+        #endregion
+
+        #region Bishop Move Generation
+
+        public static ulong GetMovesForBishop(Piece piece)
+        {
+            // The bishops starting position
+            Coordinate from = piece.Square.Coordinate;
+
+            // The value of that square
+            byte square = Board.CoordinateValue[from];
+
+            // Generates a bitboard with the pieces starting position.
+            ulong startPos = (ulong)1 << Board.CoordinateValue[from];
+
+            // Get all diagonal and antidiagonal moves for whereever the bishop currently is.
+            ulong bishopValid = GetDiagonalMoves(square, startPos) | GetAntiDiagonalMoves(square, startPos);
+
+            // DEBUG 
+            Trace.WriteLine(BitBoards.BinaryMatrix(bishopValid));
+            return bishopValid;
         }
 
         #endregion
@@ -275,7 +301,7 @@ namespace Chess
         }
         #endregion
 
-        #region Generate Moves Per Direction
+        #region Generate rank & file moves
 
         /// <summary>
         /// Get all squares to the east/west of a given square.
@@ -287,8 +313,8 @@ namespace Chess
             ulong westMoves = GetPositiveMoves(Ray.West, square);
             ulong eastMoves = GetNegativeMoves(Ray.East, square);
 
-            ulong attacks = eastMoves | westMoves; 
-            return attacks;
+            ulong moves = eastMoves | westMoves; 
+            return moves;
         }
 
         /// <summary>
@@ -301,13 +327,43 @@ namespace Chess
             ulong northMoves = GetPositiveMoves(Ray.North, square);
             ulong southMoves = GetNegativeMoves(Ray.South, square);
 
-            ulong attacks = northMoves | southMoves;
-            return attacks;
+            ulong moves = northMoves | southMoves;
+            return moves;
         }
 
-        private static ulong GetDiagonalMoves(byte square)
+        #endregion
+
+        #region Generate (anti-)diagonal moves
+
+        private static ulong GetDiagonalMask(byte square)
         {
-            return 0;
+            ulong maindia = 0x8040201008040201;
+            int diag = (square & 7) - (square >> 3);
+            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
+        }
+        private static ulong GetDiagonalMoves(byte square, ulong startPos)
+        {
+            ulong moves = GetDiagonalMask(square);
+
+            moves = BitBoards.BitBoardDict[Constants.bbSquaresOccupied] ^ (BitBoards.BitBoardDict[Constants.bbSquaresOccupied] - 2 * startPos);
+
+            return moves;
+        }
+
+        private static ulong GetAntiDiagonalMask(byte square)
+        {
+            ulong maindia = 0x0102040810204080;
+            int diag = 7 - (square & 7) - (square >> 3);
+            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
+        }
+
+        private static ulong GetAntiDiagonalMoves(byte square, ulong startPos)
+        {
+            ulong moves = GetAntiDiagonalMask(square);
+
+            moves = BitBoards.BitBoardDict[Constants.bbSquaresOccupied] ^ (BitBoards.BitBoardDict[Constants.bbSquaresOccupied] - 2 * startPos);
+
+            return moves;
         }
 
         #endregion

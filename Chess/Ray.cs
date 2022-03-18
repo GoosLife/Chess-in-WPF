@@ -12,12 +12,12 @@ namespace Chess
         // Constants naming the ulong[][] rays indexes.
         #region Direction names to int
         public const int North = 0;
-        public const int NorthEast = 1;
-        public const int East = 2;
-        public const int SouthEast = 3;
-        public const int South = 4;
-        public const int SouthWest = 5;
-        public const int West = 6;
+        public const int East = 1;
+        public const int South = 2;
+        public const int West = 3;
+        public const int NorthEast = 4;
+        public const int SouthEast = 5;
+        public const int SouthWest = 6;
         public const int NorthWest = 7;
         #endregion
 
@@ -34,6 +34,10 @@ namespace Chess
             Rays[West] = GetRaysWest();
             Rays[North] = GetRaysNorth();
             Rays[South] = GetRaysSouth();
+            Rays[NorthEast] = GetRaysNorthEast();
+            Rays[NorthWest] = GetRaysNorthWest();
+            Rays[SouthEast] = GetRaysSouthEast();
+            Rays[SouthWest] = GetRaysSouthWest();
 
             return Rays;
         }
@@ -127,6 +131,58 @@ namespace Chess
 
 
             return southRays;
+        }
+
+
+        // TODO: These all currently return empty movesets
+        public static ulong[] GetRaysNorthEast()
+        {
+            //ulong[] northEastRays = new ulong[64];
+
+            //ulong northEast = 0x8040201008040200;
+
+            //for (int i = 0; i < 8; i++, northEast <<= 1)
+            //{
+            //    ulong moves = northEast;
+
+            //    for (int j = 0; j < 8 * 8; j += 8, moves <<= 8)
+            //    {
+            //        northEastRays[j + i] = moves;
+            //    }
+            //}
+
+            //return northEastRays;
+
+            return new ulong[64];
+        }
+
+        public static ulong[] GetRaysNorthWest()
+        {
+            ulong[] northEastRays = new ulong[64];
+
+            ulong northEast = 0x102040810204000;
+
+            for (int i = 8; i > 0; i--, northEast <<= -1)
+            {
+                ulong moves = northEast;
+
+                for (int j = 64; j > 0; j -= 8, moves <<= 8)
+                {
+                    northEastRays[j - i] = moves;
+                }
+            }
+
+            return northEastRays;
+        }
+
+        public static ulong[] GetRaysSouthEast()
+        {
+            return new ulong[64];
+        }
+
+        public static ulong[] GetRaysSouthWest()
+        {
+            return new ulong[64];
         }
     }
 }
