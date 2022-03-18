@@ -343,11 +343,9 @@ namespace Chess
         }
         private static ulong GetDiagonalMoves(byte square, ulong startPos)
         {
-            ulong moves = GetDiagonalMask(square);
-
-            moves = BitBoards.BitBoardDict[Constants.bbSquaresOccupied] ^ (BitBoards.BitBoardDict[Constants.bbSquaresOccupied] - 2 * startPos);
-
-            return moves;
+            ulong maindia = 0x8040201008040201;
+            int diag = (square & 7) - (square >> 3);
+            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
         }
 
         private static ulong GetAntiDiagonalMask(byte square)
@@ -359,11 +357,9 @@ namespace Chess
 
         private static ulong GetAntiDiagonalMoves(byte square, ulong startPos)
         {
-            ulong moves = GetAntiDiagonalMask(square);
-
-            moves = BitBoards.BitBoardDict[Constants.bbSquaresOccupied] ^ (BitBoards.BitBoardDict[Constants.bbSquaresOccupied] - 2 * startPos);
-
-            return moves;
+            ulong maindia = 0x0102040810204080;
+            int diag = 7 - (square & 7) - (square >> 3);
+            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
         }
 
         #endregion
