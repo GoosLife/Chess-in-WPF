@@ -222,7 +222,6 @@ namespace Chess
 
         #endregion
 
-        // TODO: Rook can currently move on top of and through all pieces.
         #region Rook Move Generation
 
         public static ulong GetMovesForRook(Piece piece)
@@ -244,7 +243,6 @@ namespace Chess
         private static ulong GetPositiveMoves(int rayDirection, byte square)
         {
             ulong moves = Ray.Rays[rayDirection][square];
-            Trace.WriteLine("Initial moveset: \n" + BitBoards.BinaryMatrix(moves));
             ulong blocker = moves & BitBoards.BitBoardDict[Constants.bbSquaresOccupied]; // moves on an empty board AND'ed with the current bitboard of all pieces.
 
             // if this direction is eventually blocked off by a piece.
@@ -252,6 +250,23 @@ namespace Chess
             {
                 // using forward bitscan to find the least significant bit
                 int blockerSquare = BitHelper.GetLeastSignificant1Bit(blocker);
+
+                moves = moves ^ Ray.Rays[rayDirection][blockerSquare];
+            }
+
+            return moves;
+        }
+
+        private static ulong GetNegativeMoves(int rayDirection, byte square)
+        {
+            ulong moves = Ray.Rays[rayDirection][square];
+            ulong blocker = moves & BitBoards.BitBoardDict[Constants.bbSquaresOccupied];
+
+            // if this direction is eventually blocked off by a piece.
+            if (blocker != 0)
+            {
+                // using forward bitscan to find the least significant bit
+                int blockerSquare = BitHelper.GetMostSignificant1Bit(blocker);
 
                 moves = moves ^ Ray.Rays[rayDirection][blockerSquare];
             }
@@ -270,7 +285,9 @@ namespace Chess
         private static ulong GetRankMoves(byte square)
         {
             ulong westMoves = GetPositiveMoves(Ray.West, square);
-            ulong attacks = Ray.Rays[Ray.East][square] | westMoves; 
+            ulong eastMoves = GetNegativeMoves(Ray.East, square);
+
+            ulong attacks = eastMoves | westMoves; 
             return attacks;
         }
 
@@ -282,8 +299,15 @@ namespace Chess
         private static ulong GetFileMoves(byte square)
         {
             ulong northMoves = GetPositiveMoves(Ray.North, square);
-            ulong attacks = northMoves | Ray.Rays[Ray.South][square];
+            ulong southMoves = GetNegativeMoves(Ray.South, square);
+
+            ulong attacks = northMoves | southMoves;
             return attacks;
+        }
+
+        private static ulong GetDiagonalMoves(byte square)
+        {
+            return 0;
         }
 
         #endregion

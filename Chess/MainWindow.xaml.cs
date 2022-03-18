@@ -40,7 +40,6 @@ namespace Chess
             b.GetPieces(); // Board retrieves a list of its own pieces.
 
             Ray.GenerateRays();
-            Trace.WriteLine(Ray.Rays[Ray.East][7]);
 
             #region DEBUG
             #endregion
@@ -53,7 +52,7 @@ namespace Chess
         bool isCancel;
         
         // The square that a dragged piece was taken from. Snaps back to this square, when user attempts to place
-        // the piece outside of the board.
+        // the piece illegally.
         Point origSquare;
 
         public void Piece_MouseDown(object sender, MouseButtonEventArgs e)
