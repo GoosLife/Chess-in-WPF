@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -337,29 +338,41 @@ namespace Chess
 
         private static ulong GetDiagonalMask(byte square)
         {
-            ulong maindia = 0x8040201008040201;
+            ulong diagonal = Constants.Diagonal;
             int diag = (square & 7) - (square >> 3);
-            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
+            return diag >= 0 ? diagonal >> diag * 8 : diagonal << -diag * 8;
         }
         private static ulong GetDiagonalMoves(byte square, ulong startPos)
         {
-            ulong maindia = 0x8040201008040201;
-            int diag = (square & 7) - (square >> 3);
-            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
+            ulong maskEx = GetDiagonalMask(square) ^ startPos; // Diagonal mask excluding the square the piece is currently on
+
+            ulong forward = BitBoards.BitBoardDict[Constants.bbSquaresOccupied] & maskEx;
+            ulong reverse = BinaryPrimitives.ReverseEndianness(forward);
+            forward -= startPos;
+            reverse -= BinaryPrimitives.ReverseEndianness(startPos);
+            forward ^= BinaryPrimitives.ReverseEndianness(reverse);
+            forward &= maskEx;
+            return forward;
         }
 
         private static ulong GetAntiDiagonalMask(byte square)
         {
-            ulong maindia = 0x0102040810204080;
+            ulong antiDiagonal = Constants.AntiDiagonal;
             int diag = 7 - (square & 7) - (square >> 3);
-            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
+            return diag >= 0 ? antiDiagonal >> diag * 8 : antiDiagonal << -diag * 8;
         }
 
         private static ulong GetAntiDiagonalMoves(byte square, ulong startPos)
         {
-            ulong maindia = 0x0102040810204080;
-            int diag = 7 - (square & 7) - (square >> 3);
-            return diag >= 0 ? maindia >> diag * 8 : maindia << -diag * 8;
+            ulong maskEx = GetAntiDiagonalMask(square) ^ startPos; // Diagonal mask excluding the square the piece is currently on
+
+            ulong forward = BitBoards.BitBoardDict[Constants.bbSquaresOccupied] & maskEx;
+            ulong reverse = BinaryPrimitives.ReverseEndianness(forward);
+            forward -= startPos;
+            reverse -= BinaryPrimitives.ReverseEndianness(startPos);
+            forward ^= BinaryPrimitives.ReverseEndianness(reverse);
+            forward &= maskEx;
+            return forward;
         }
 
         #endregion

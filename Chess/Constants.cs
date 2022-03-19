@@ -8,7 +8,7 @@ namespace Chess
 {
     internal class Constants
     {
-        #region Ranks and Files
+        #region Ranks, Files & Diagonals
 
         // Empty files
 
@@ -22,6 +22,11 @@ namespace Chess
 
         public const ulong Rank5 = 0x000000FF00000000;
         public const ulong Rank4 = 0x00000000FF000000;
+
+        // Diagonals
+
+        public const ulong Diagonal = 0x8040201008040201;
+        public const ulong AntiDiagonal = 0x0102040810204080;
 
         #endregion
 
