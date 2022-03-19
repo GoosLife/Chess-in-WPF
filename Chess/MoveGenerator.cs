@@ -34,6 +34,14 @@ namespace Chess
         /// <returns>The valid moveset. If the moveset doesn't exist, returns 0.</returns>
         public static ulong GenerateMovesForPiece(Piece piece, Board board)
         {
+            // Used to get and remove the moving pieces own pieces from its list of valid moves.
+            string ownPieces = "";
+
+            if (board.Turn == Color.White)
+                ownPieces = Constants.bbWhitePieces;
+            else
+                ownPieces = Constants.bbBlackPieces;
+
             switch (piece.Type)
             {
                 
@@ -52,16 +60,19 @@ namespace Chess
                     }
                 
                 case PieceType.Knight:
-                    return GetMovesForKnight(piece);
+                    return GetMovesForKnight(piece) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.King:
-                    return GetMovesForKing(piece);
+                    return GetMovesForKing(piece) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Rook:
-                    return GetMovesForRook(piece);
+                    return GetMovesForRook(piece) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Bishop:
-                    return GetMovesForBishop(piece);
+                    return GetMovesForBishop(piece) & ~BitBoards.BitBoardDict[ownPieces];
+
+                case PieceType.Queen:
+                    return (GetMovesForBishop(piece) | GetMovesForRook(piece)) & ~BitBoards.BitBoardDict[ownPieces];
 
                 default:
                     return 0;
@@ -115,8 +126,8 @@ namespace Chess
 
             // Attacks
 
-            ulong attackLeft = (startPos & Constants.EmptyFileH) >> 7; // The square ahead and left of the pawn can be attacked, unless the pawn is on File H.
-            ulong attackRight = (startPos & Constants.EmptyFileA) >> 9; // The square ahead and right of the pawn can be attacked, unless the pawn is on File H.
+            ulong attackLeft = (startPos & Constants.EmptyFileA) >> 7; // The square ahead and left of the pawn can be attacked, unless the pawn is on File H.
+            ulong attackRight = (startPos & Constants.EmptyFileH) >> 9; // The square ahead and right of the pawn can be attacked, unless the pawn is on File H.
             ulong allAttacks = attackLeft | attackRight; // A combination of all possible attacks.
 
             ulong validAttacks = allAttacks & BitBoards.BitBoardDict["WhitePieces"]; // An attack is valid if it is possible for the pawn to attack that way, and if the attacked square has an opposing piece on it.

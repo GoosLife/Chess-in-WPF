@@ -214,23 +214,12 @@ namespace Chess
         /// <returns></returns>
         public static bool MakeMove(Board board, double oldX, double oldY, double newX, double newY)
         {
-            int oldSquareIndex = 0;
-            int newSquareIndex = 0;
+            Coordinate newSquareCoords;
+            Square newSquare = Board.GetSquare(board, newX, newY, out newSquareCoords);
 
-            oldY = Math.Floor(oldY / 100) - 1;
-            oldX = Math.Floor(oldX / 100) - 1;
+            Coordinate oldSquareCoords;
+            Square oldSquare = Board.GetSquare(board, oldX, oldY, out oldSquareCoords);
 
-            newY = Math.Floor(newY / 100) - 1;
-            newX = Math.Floor(newX / 100) - 1;
-
-            oldSquareIndex = ((int)oldX + (8 * (int)oldY));
-            newSquareIndex = ((int)newX + (8 * (int)newY));
-
-            Coordinate oldSquareCoords = (Coordinate)oldSquareIndex;
-            Coordinate newSquareCoords = (Coordinate)newSquareIndex;
-
-            Square newSquare = board.SquareDict[newSquareCoords];
-            Square oldSquare = board.SquareDict[oldSquareCoords];
             Piece piece = oldSquare.Piece;
 
             if ((newSquare.Piece != null && newSquare.Piece.Color == piece.Color) || piece.Color != board.Turn)

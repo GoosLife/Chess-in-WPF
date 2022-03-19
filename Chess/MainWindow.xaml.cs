@@ -73,6 +73,8 @@ namespace Chess
             // Calculate moves and show squares that can be moved to
             // moveGenerator.SomeFunctionShowSquares(origSquare.Y, origSquare.X); // TODO: Maybe have a function that gets the square from the coordinates
 
+            HighlightValidSquares();
+
             offset = e.GetPosition(CanvasMain);
             offset.Y -= Canvas.GetTop(dragObject);
             offset.X -= Canvas.GetLeft(dragObject);
@@ -123,6 +125,8 @@ namespace Chess
                 this.CanvasMain.ReleaseMouseCapture();
             }
             isCancel = false;
+
+            RemoveSquareHighlights(); // Remove the highlight dots from the squares.
         }
 
         /// <summary>
@@ -150,7 +154,6 @@ namespace Chess
                 - Piece.SpriteSize / 2;
 
             var newSquareIndex = ((int)(leftPos / 100 - 1) + (8 * (int)(topPos / 100 - 1)));
-            Coordinate newSquareCoords = (Coordinate)newSquareIndex;
 
             // Cancel move if it is out of bounds
             if ((topPos < minPos || topPos > maxPos) || (leftPos < minPos || leftPos > maxPos))
@@ -175,6 +178,67 @@ namespace Chess
             Canvas.SetLeft(dragObject, leftPos);
         }
 
+        #region Highlight valid squares for move
+
+        /// <summary>
+        /// Highlights the squares the currently selected piece can move to.
+        /// </summary>
+        private void HighlightValidSquares()
+        {
+            Square s = Board.GetSquare(b, origSquare.X, origSquare.Y);
+            Piece p = s.Piece;
+
+            int dotSize = 10;
+
+            if (p.Color == b.Turn)
+            {
+                string validMoves = BitBoards.BitBoardAsBinary(MoveGenerator.GenerateMovesForPiece(p, b));
+                int squareIterator = 0;
+
+                foreach (char c in validMoves)
+                {
+                    if (c == '1')
+                    {
+                        // Get position of piece's square
+                        double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                            + Square.Size / 2
+                            - dotSize / 2;
+                        double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                            + Square.Size / 2
+                            - dotSize / 2;
+
+                        // Create new pawn
+                        Ellipse dot = new Ellipse();
+                        dot.Height = 10;
+                        dot.Width = 10;
+                        dot.Stroke = Brushes.Black;
+                        dot.Fill = new SolidColorBrush(Colors.Gold);
+                        dot.Tag = "dot";
+                        Canvas.SetTop(dot, topPos);
+                        Canvas.SetLeft(dot, leftPos);
+                        Canvas.SetZIndex(dot, 999);
+
+                        CanvasMain.Children.Add(dot);
+                    }
+
+                    squareIterator++;
+                }
+            }
+        }
+
+        private void RemoveSquareHighlights()
+        {
+            for (int i = CanvasMain.Children.Count - 1; i >= 0; i--)
+            {
+                UIElement Child = CanvasMain.Children[i];
+                if (Child is Ellipse)
+                    CanvasMain.Children.Remove(Child);
+            }
+        }
+
+        #endregion
+
+        #region Drawing Pieces
         public void DrawPieces()
         {
             DrawPawns();
@@ -544,5 +608,7 @@ namespace Chess
                 squareIterator++;
             }
         }
+
+        #endregion
     }
 }

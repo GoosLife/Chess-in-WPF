@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace Chess
 {
@@ -89,6 +90,30 @@ namespace Chess
                     pieceCount++;
                 }
             }
+        }
+
+        public static Square GetSquare(Board board, double x, double y)
+        {
+            x = Math.Floor(x / 100) - 1;
+            y = Math.Floor(y / 100) - 1;
+
+            int squareIndex = ((int)x + (8 * (int)y));
+
+            Coordinate squareCoords = (Coordinate)squareIndex;
+
+            return board.SquareDict[squareCoords];
+        }
+
+        public static Square GetSquare(Board board, double x, double y, out Coordinate squareCoords)
+        {
+            x = Math.Floor(x / 100) - 1;
+            y = Math.Floor(y / 100) - 1;
+
+            int squareIndex = ((int)x + (8 * (int)y));
+
+            squareCoords = (Coordinate)squareIndex;
+
+            return board.SquareDict[squareCoords];
         }
 
     }
