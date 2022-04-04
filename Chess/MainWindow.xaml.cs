@@ -21,23 +21,23 @@ namespace Chess
     /// </summary>
     public partial class MainWindow : Window
     {
-        Board b;
+        Board board;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            b = new Board();
+            board = new Board();
             BitBoards.GenerateBitBoards();
 
-            foreach (Square s in b.Squares)
+            foreach (Square s in board.Squares)
             {
                 CanvasMain.Children.Add(s.Sprite);
             }
 
             DrawPieces();
 
-            b.GetPieces(); // Board retrieves a list of its own pieces.
+            board.GetPieces(); // Board retrieves a list of its own pieces.
 
             Ray.GenerateRays();
 
@@ -165,7 +165,7 @@ namespace Chess
             if (!isCancel)
             {
                 // Move has another chance to cancel if MakeMove returns false
-                isCancel = !BitBoards.MakeMove(b, origSquare.X, origSquare.Y, leftPos, topPos);
+                isCancel = !board.MoveManager.MakeMove(origSquare.X, origSquare.Y, leftPos, topPos);
             }
 
             if (isCancel) // reset coordinates as move can't be completed
@@ -185,14 +185,14 @@ namespace Chess
         /// </summary>
         private void HighlightValidSquares()
         {
-            Square s = Board.GetSquare(b, origSquare.X, origSquare.Y);
+            Square s = board.GetSquare(board, origSquare.X, origSquare.Y);
             Piece p = s.Piece;
 
             int dotSize = 10;
 
-            if (p.Color == b.Turn)
+            if (p.Color == board.Turn)
             {
-                string validMoves = BitBoards.BitBoardAsBinary(MoveGenerator.GenerateMovesForPiece(p, b));
+                string validMoves = BitBoards.BitBoardAsBinary(board.MoveManager.MoveGenerator.GetMoves(p));
                 int squareIterator = 0;
 
                 foreach (char c in validMoves)
@@ -200,10 +200,10 @@ namespace Chess
                     if (c == '1')
                     {
                         // Get position of piece's square
-                        double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                        double topPos = Canvas.GetTop(board.Squares[squareIterator].Sprite)
                             + Square.Size / 2
                             - dotSize / 2;
-                        double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                        double leftPos = Canvas.GetLeft(board.Squares[squareIterator].Sprite)
                             + Square.Size / 2
                             - dotSize / 2;
 
@@ -258,9 +258,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -272,8 +272,8 @@ namespace Chess
                     CanvasMain.Children.Add(p.Sprite);
 
                     // Give piece to square
-                    p.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = p;
+                    p.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = p;
                 }
                 // Check next square
                 squareIterator++;
@@ -287,9 +287,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -301,8 +301,8 @@ namespace Chess
                     CanvasMain.Children.Add(p.Sprite);
 
                     // Give piece to square
-                    p.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = p;
+                    p.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = p;
                 }
                 // Check next square
                 squareIterator++;
@@ -318,9 +318,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -332,8 +332,8 @@ namespace Chess
                     CanvasMain.Children.Add(r.Sprite);
 
                     // Give piece to square
-                    r.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = r;
+                    r.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = r;
                 }
                 // Check next square
                 squareIterator++;
@@ -347,9 +347,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -361,8 +361,8 @@ namespace Chess
                     CanvasMain.Children.Add(r.Sprite);
 
                     // Give piece to square
-                    r.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = r;
+                    r.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = r;
                 }
                 // Check next square
                 squareIterator++;
@@ -378,9 +378,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -392,8 +392,8 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = k;
+                    k.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = k;
                 }
                 // Check next square
                 squareIterator++;
@@ -407,9 +407,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -421,8 +421,8 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = k;
+                    k.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = k;
                 }
                 // Check next square
                 squareIterator++;
@@ -438,9 +438,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(this.b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(this.b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -452,8 +452,8 @@ namespace Chess
                     CanvasMain.Children.Add(b.Sprite);
 
                     // Give piece to square
-                    b.Square = this.b.SquareDict[(Coordinate)squareIterator];
-                    this.b.Squares[squareIterator].Piece = b;
+                    b.Square = this.board.SquareDict[(Coordinate)squareIterator];
+                    this.board.Squares[squareIterator].Piece = b;
                 }
                 // Check next square
                 squareIterator++;
@@ -467,9 +467,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(this.b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(this.b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -481,8 +481,8 @@ namespace Chess
                     CanvasMain.Children.Add(b.Sprite);
 
                     // Give piece to square
-                    b.Square = this.b.SquareDict[(Coordinate)squareIterator];
-                    this.b.Squares[squareIterator].Piece = b;
+                    b.Square = this.board.SquareDict[(Coordinate)squareIterator];
+                    this.board.Squares[squareIterator].Piece = b;
                 }
                 // Check next square
                 squareIterator++;
@@ -498,9 +498,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(this.b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(this.b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -512,8 +512,8 @@ namespace Chess
                     CanvasMain.Children.Add(q.Sprite);
 
                     // Give piece to square
-                    q.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = q;
+                    q.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = q;
                 }
                 // Check next square
                 squareIterator++;
@@ -527,9 +527,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(this.b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(this.b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -541,8 +541,8 @@ namespace Chess
                     CanvasMain.Children.Add(q.Sprite);
 
                     // Give piece to square
-                    q.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = q;
+                    q.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = q;
                 }
                 // Check next square
                 squareIterator++;
@@ -558,9 +558,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(this.b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(this.b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -572,8 +572,8 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = k;
+                    k.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = k;
                 }
                 // Check next square
                 squareIterator++;
@@ -587,9 +587,9 @@ namespace Chess
                 if (c == '1')
                 {
                     // Get position of piece's square
-                    double topPos = Canvas.GetTop(this.b.Squares[squareIterator].Sprite)
+                    double topPos = Canvas.GetTop(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
-                    double leftPos = Canvas.GetLeft(this.b.Squares[squareIterator].Sprite)
+                    double leftPos = Canvas.GetLeft(this.board.Squares[squareIterator].Sprite)
                         + Square.Size / 2;
 
                     // Create new pawn
@@ -601,8 +601,8 @@ namespace Chess
                     CanvasMain.Children.Add(k.Sprite);
 
                     // Give piece to square
-                    k.Square = b.SquareDict[(Coordinate)squareIterator];
-                    b.Squares[squareIterator].Piece = k;
+                    k.Square = board.SquareDict[(Coordinate)squareIterator];
+                    board.Squares[squareIterator].Piece = k;
                 }
                 // Check next square
                 squareIterator++;
@@ -610,5 +610,15 @@ namespace Chess
         }
 
         #endregion
+
+        /// <summary>
+        /// DEBUG: Force the computer to make one move.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            board.MoveManager.MakeAIMove();
+        }
     }
 }

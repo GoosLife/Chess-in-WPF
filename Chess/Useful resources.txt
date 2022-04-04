@@ -1,4 +1,6 @@
-Useful resources:
-
-https://www.chessprogramming.org/Main_Page
-https://pages.cs.wisc.edu/~psilord/blog/data/chess-pages/
+0 = 1
+1 = 2
+2 = 3
+3 = 4
+index4 = det 5. index (fordi nul er det første) = 5
+5 = 6

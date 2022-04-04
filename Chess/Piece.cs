@@ -49,5 +49,7 @@ namespace Chess
         public PieceType Type { get; set; }
 
         public abstract Image CreateSprite(double topPos, double leftPos, Color color);
+
+        public List<byte> Moves { get; set; } = new List<byte>();
     }
 }

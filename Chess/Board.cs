@@ -46,12 +46,16 @@ namespace Chess
         /// </summary>
         public Square[] Squares;
 
-        public Piece[] Pieces { get; set; } = new Piece[32];
+        public List<Piece> Pieces { get; set; } = new List<Piece>();
 
         public Color Turn { get; set; } = Color.White;
 
+        public MoveManager MoveManager { get; set; }
+
         public Board()
         {
+            MoveManager = new MoveManager(this);
+
             Squares = new Square[64];
 
             SquareDict = new Dictionary<Coordinate, Square>();
@@ -86,13 +90,13 @@ namespace Chess
             {
                 if (Squares[i].Piece != null)
                 {
-                    Pieces[pieceCount] = Squares[i].Piece;
+                    Pieces.Add(Squares[i].Piece);
                     pieceCount++;
                 }
             }
         }
 
-        public static Square GetSquare(Board board, double x, double y)
+        public Square GetSquare(Board board, double x, double y)
         {
             x = Math.Floor(x / 100) - 1;
             y = Math.Floor(y / 100) - 1;
@@ -104,7 +108,7 @@ namespace Chess
             return board.SquareDict[squareCoords];
         }
 
-        public static Square GetSquare(Board board, double x, double y, out Coordinate squareCoords)
+        public Square GetSquare(Board board, double x, double y, out Coordinate squareCoords)
         {
             x = Math.Floor(x / 100) - 1;
             y = Math.Floor(y / 100) - 1;
