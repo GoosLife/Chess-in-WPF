@@ -104,20 +104,30 @@ namespace Chess
             // TODO: Implement special move generation in case king is checked.
             /*
              Moves that can be performed while in check:
-                1. Capture the piece delivering check
-                2. Move king to non-attacked square
-                3. Place another piece between king and attacking piece.
+                1. DONE : Capture the piece delivering check
+                2. TODO : Move king to non-attacked square
+                3. TODO : Place another piece between king and attacking piece.
 
             THEN TODO: Implement double check
              */
             // Get the piece performing check, if any
             Piece? checkingPiece = GetCheckingPiece();
 
-            // If a piece is putting the current king in check
+            ulong safeKingMoves = 0; // If the piece IS a king, and the king can move to safety, this variable will store those valid moves.
+            ulong interposingMoves = 0; // If the piece ISN'T a king, but can move between the checking piece and the king, this will show those moves.
+
+            // If a piece is putting the current king in check // TODO: This should never be null so this check might be unnecessary.
             if (checkingPiece != null)
             {
+                // If the piece is a king, see if it can move out of check
+                if (piece.Type == PieceType.King)
+                    safeKingMoves = MoveToSafety(piece); // TODO: Use this to always get safe moves for king
+                // Only pieces that AREN'T kings can make interposing moves
+                else
+                    interposingMoves = InterposingMoves(checkingPiece, piece); // Get interposing moves
+
                 // Check if this piece can capture the piece delivering check
-                return TakeCheckingPiece(checkingPiece, piece);
+                return TakeCheckingPiece(checkingPiece, piece) | safeKingMoves | interposingMoves;
             }
 
             else
@@ -535,7 +545,6 @@ namespace Chess
         {
             // Dictionary of attacks based on side
             Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
-            Dictionary<Piece, ulong> myAttacks = new Dictionary<Piece, ulong>();
 
             // The square that we are checking whether is under attacks
             ulong attackedSquare;
@@ -560,9 +569,43 @@ namespace Chess
                     return p.Key;
                 }
             }
-
+            
             // No checks have been found:  return false.
             return null;
+        }
+
+        // Checks if a piece is still checking the king after the next move, rendering the move invalid
+        public bool IsPieceStillChecking()
+        {
+            // Dictionary of attacks based on side
+            Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
+
+            // The square that we are checking whether is under attacks
+            ulong attackedSquare;
+
+            // Get turn & determine which king/attack set to check against
+            if (Board.Turn != Color.White)
+            {
+                attackedSquare = BitBoards.BitBoardDict[Constants.bbWhiteKing];
+                opponentAttacks = BlackAttacks;
+            }
+            else
+            {
+                attackedSquare = BitBoards.BitBoardDict[Constants.bbBlackKing];
+                opponentAttacks = WhiteAttacks;
+            }
+
+            // Check for attacks by all piece types
+            foreach (var p in opponentAttacks)
+            {
+                if ((attackedSquare & p.Value) != 0)
+                {
+                    return true;
+                }
+            }
+
+            // No checks have been found:  return false.
+            return false;
         }
 
         #endregion
@@ -578,7 +621,6 @@ namespace Chess
         {
             // Dictionary of attacks based on side
             Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
-            Dictionary<Piece, ulong> myAttacks = new Dictionary<Piece, ulong>();
 
             // The square that we are checking whether is under attacks
             ulong attackedSquare;
@@ -601,6 +643,95 @@ namespace Chess
 
             // No attacks have been found:  moveset is empty.
             return 0;
+        }
+
+        /// <summary>
+        /// Gets the moves that can get the king to safety
+        /// </summary>
+        /// <param name="attackedKing"></param>
+        /// <returns></returns>
+        public ulong MoveToSafety(Piece attackedKing)
+        {
+            // Dictionary of attacks based on side
+            Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
+
+            // All the squares the king can normally move to
+            ulong kingMoves = GenerateMovesForPiece(attackedKing);
+
+            // Get turn & determine which attack set to check against
+            if (Board.Turn == Color.White)
+            {
+                opponentAttacks = BlackAttacks;
+            }
+            else
+            {
+                opponentAttacks = WhiteAttacks;
+            }
+
+            // Check for attacks by all piece types
+            foreach (var attack in opponentAttacks)
+            {
+                if ((kingMoves & attack.Value) != 0)
+                {
+                    kingMoves ^= (kingMoves & attack.Value); /* VALID SQUARES = O
+                                                                ILLEGAL SQUARES = X
+                                                                KING = K
+                                                                ROOK = R
+                                                                KNIGHT = N
+                                                        
+                                                                Pseudolegal king moves:     Pseudolegal rook moves:     King moves & rook moves:
+                                                                XXNX                        XXNO                        XXNX
+                                                                OOOR                        OOOR                        OOOR
+                                                                OKOX                        XKXO                        XKXX
+                                                                
+                                                                This is the opposite of what we want, so we reverse it by exlusive or'ing it with the kings original moveset:
+
+                                                                Pseudolegal king moves:     King moves & rook moves:    Moves out of check (king moves XOR (king moves & rook moves))
+                                                                XXNX                        XXNX                        XXNX
+                                                                OOOR                        OOOR                        XXXR
+                                                                OKOX                        XKXX                        OKOX
+                                                             */
+                                                              
+                }
+            }
+
+            // Return the kings leftover legal moves
+            return kingMoves;
+        }
+
+        public ulong InterposingMoves(Piece checkingPiece, Piece p)
+        {
+            // Pawns & knights aren't sliding pieces, their attacks can't be blocked by interposing. The same is true for the king, but the king can't deliver check.
+            if (checkingPiece.Type == PieceType.Pawn || checkingPiece.Type == PieceType.Knight)
+                return 0;
+
+            // Attackset for checking piece
+            ulong checkingPieceMoveset = GenerateMovesForPiece(checkingPiece);
+
+            // Moves for the defending piece
+            ulong defendingPieceMoveset = GenerateMovesForPiece(p); // All pseudolegal moves the defending piece can make, that the checking piece can also make
+            List<byte> potentialInterposingMoves = new List<byte>(); // List of all positions the defending piece can pseudolegally move to, that might be actual interposing moves.
+            ulong defendingPieceInterposingMoves = 0; // Moves that actually interpose the king and the checking piece
+
+            // Squares involved in the moves we are check
+            Square oldSquare = p.Square; // The defending pieces current square
+
+            while (defendingPieceMoveset > 0)
+            {
+                byte moveToAdd = (byte)BitHelper.GetLeastSignificant1Bit(defendingPieceMoveset);
+                defendingPieceMoveset ^= (ulong)1 << (byte)BitHelper.GetLeastSignificant1Bit(defendingPieceMoveset);
+
+                Coordinate newSquareCoord = Board.CoordinateValue.FirstOrDefault(square => square.Value == moveToAdd).Key;
+                Square newSquare = Board.SquareDict[newSquareCoord];
+
+                if (Board.MoveManager.InterposesOutOfCheck(oldSquare, newSquare))
+                {
+                    defendingPieceInterposingMoves |= moveToAdd;
+                }
+            }
+
+            // Moves that can block the sliding pieces direct path to the king
+            return checkingPieceMoveset & defendingPieceInterposingMoves;
         }
         #endregion
     }

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,14 +24,18 @@ namespace Chess
     public partial class MainWindow : Window
     {
         Board board;
+        bool moveFreely = false; // DEBUG
+        Label lblTurn = new Label();
 
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = this;
 
-            board = new Board();
-            BitBoards.GenerateBitBoards();
+            board = new Board(); // Instantialize board
+            BitBoards.GenerateBitBoards(); // Generate new bitboards
 
+            // Draw board squares
             foreach (Square s in board.Squares)
             {
                 CanvasMain.Children.Add(s.Sprite);
@@ -42,8 +48,17 @@ namespace Chess
             Ray.GenerateRays();
 
             #region DEBUG
+            // DEBUG
+            lblTurn.Content = board.Turn.ToString();
+            Canvas.SetLeft(lblTurn, 1550);
+            Canvas.SetTop(lblTurn, 150);
+            lblTurn.Name = "lblTurn";
+
+            CanvasMain.Children.Add(lblTurn);
+            // END DEBUG
             #endregion
         }
+
 
         public static UIElement clickObject = null;
         public static UIElement dragObject = null;
@@ -127,6 +142,8 @@ namespace Chess
             isCancel = false;
 
             RemoveSquareHighlights(); // Remove the highlight dots from the squares.
+
+            lblTurn.Content = board.Turn.ToString(); // DEBUG: Set label to display current turn
         }
 
         /// <summary>
@@ -164,8 +181,12 @@ namespace Chess
             // Check move legality and update logic
             if (!isCancel)
             {
-                // Move has another chance to cancel if MakeMove returns false
-                isCancel = !board.MoveManager.MakeMove(origSquare.X, origSquare.Y, leftPos, topPos);
+                if (!moveFreely)
+                    // Move has another chance to cancel if MakeMove returns false
+                    isCancel = !board.MoveManager.MakeMove(origSquare.X, origSquare.Y, leftPos, topPos);
+                else
+                    // Same check, but this time piece can move anywhere // DEBUG
+                    isCancel = !board.MoveManager.MakeFreeMove(origSquare.X, origSquare.Y, leftPos, topPos);
             }
 
             if (isCancel) // reset coordinates as move can't be completed
@@ -619,6 +640,19 @@ namespace Chess
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             board.MoveManager.MakeAIMove();
+
+            // DEBUG: Set label to return current move
+            lblTurn.Content = board.Turn.ToString();
+        }
+
+        private void FreeMoveToggle_Click(object sender, RoutedEventArgs e)
+        {
+            moveFreely = !moveFreely;
+
+            if (moveFreely)
+                FreeMoveToggle.Content = "Moving freely";
+            else
+                FreeMoveToggle.Content = "Following rules";
         }
     }
 }

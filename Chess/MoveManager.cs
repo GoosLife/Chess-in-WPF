@@ -114,6 +114,84 @@ namespace Chess
         }
 
         /// <summary>
+        /// Moves a piece from 1 square to another and updates relevant bitboards, but pieces can move freely. Useful for setting up boards.
+        /// </summary>
+        /// <returns></returns>
+        public bool MakeFreeMove(double oldX, double oldY, double newX, double newY)
+        {
+            Coordinate newSquareCoords;
+            Square newSquare = Board.GetSquare(Board, newX, newY, out newSquareCoords);
+
+            Coordinate oldSquareCoords;
+            Square oldSquare = Board.GetSquare(Board, oldX, oldY, out oldSquareCoords);
+
+            Piece piece = oldSquare.Piece;
+
+            if ((newSquare.Piece != null && newSquare.Piece == piece))
+            {
+                return false;
+            }
+
+            //if (!MoveGenerator.IsPseudoLegal(oldSquare, newSquare))
+            //{
+            //    return false;
+            //}
+            //else
+            //{
+            ulong fromBoard = BitBoards.BitBoardDict["SquaresOccupied"];
+
+                // Update bitboards
+
+                ulong from = (ulong)1 << (int)Board.CoordinateValue[oldSquareCoords];
+                ulong to = (ulong)1 << (int)Board.CoordinateValue[newSquareCoords];
+                ulong fromTo = from ^ to;
+                BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(piece)] ^= fromTo;
+                string pieceColor = piece.Color.ToString();
+                BitBoards.BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
+
+                // remove opposing piece from the game if any
+                if (newSquare.Piece != null)
+                {
+                    newSquare.Piece.Sprite.Source = null;
+                    newSquare.Piece.Square = null;
+
+                    BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(newSquare.Piece)] ^= to;
+
+                    string takenPieceColor = newSquare.Piece.Color.ToString();
+                    BitBoards.BitBoardDict[takenPieceColor + "Pieces"] ^= to; // 
+
+                    BitBoards.BitBoardDict["SquaresOccupied"] ^= from;
+                    BitBoards.BitBoardDict["SquaresEmpty"] ^= from;
+
+                    Board.Pieces.Remove(newSquare.Piece);
+
+                    // Remove piece attacks from attack sets // TODO: Implement this better - currently sets value to 0 for all attacksets.
+                    MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
+                    MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+                    MoveGenerator.AllAttacks[newSquare.Piece] = 0;
+                }
+                // Apply ^= fromto instead of ^= from, if no capture has taken place.
+                else
+                {
+                    BitBoards.BitBoardDict["SquaresOccupied"] ^= fromTo;
+                    BitBoards.BitBoardDict["SquaresEmpty"] ^= fromTo;
+                }
+
+                // Move this piece from its previous square
+                // to its new square
+                oldSquare.Piece = null;
+                newSquare.Piece = piece;
+                piece.Square = newSquare;
+
+                Board.Turn = (Color)((int)Board.Turn * -1);
+
+                MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
+
+                return true;
+            //}
+        }
+
+        /// <summary>
         /// Moves a piece from 1 square to another and updates relevant bitboards
         /// </summary>
         /// <returns></returns>
@@ -182,22 +260,122 @@ namespace Chess
                 newSquare.Piece = piece;
                 piece.Square = newSquare;
 
-
-                // DEBUG: Writes all the affected bitboards to output from debug
-                //Trace.WriteLine("From: \n" + BitBoardAsBinaryMatrix(from));
-                //Trace.WriteLine("To: \n" + BitBoardAsBinaryMatrix(to));
-                //Trace.WriteLine("FromTo: \n" + BitBoardAsBinaryMatrix(fromTo));
-                //Trace.WriteLine("PieceBB: \n" + BitBoardAsBinaryMatrix(BitBoardDict[GetBitBoardByPiece(piece)]));
-                //Trace.WriteLine("ColorBB: \n" + BitBoardAsBinaryMatrix(BitBoardDict[pieceColor + "Pieces"]));
-                //Trace.WriteLine("OccSq: \n" + BitBoardAsBinaryMatrix(BitBoardDict["SquaresOccupied"]));
-                //Trace.WriteLine("EmpSq: \n" + BitBoardAsBinaryMatrix(BitBoardDict["SquaresEmpty"]));
-
                 Board.Turn = (Color)((int)Board.Turn * -1);
 
                 MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
 
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Makes a hypothetical, potentially interposing move. Since we only test moves we know are pseudolegal, this check is skipped, preventing the function from becoming recursive.
+        /// Other than that, it is the same as MakeMove(Square oldSquare, Square newSquare)
+        /// </summary>
+        /// <returns></returns>
+        public bool TestInterposingMove(Square oldSquare, Square newSquare)
+        {
+            Coordinate newSquareCoords = newSquare.Coordinate;
+
+            Coordinate oldSquareCoords = oldSquare.Coordinate;
+
+            Piece piece = oldSquare.Piece;
+
+            ulong fromBoard = BitBoards.BitBoardDict["SquaresOccupied"];
+
+            // Update bitboards
+
+            ulong from = (ulong)1 << (int)Board.CoordinateValue[oldSquareCoords];
+            ulong to = (ulong)1 << (int)Board.CoordinateValue[newSquareCoords];
+            ulong fromTo = from ^ to;
+            BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(piece)] ^= fromTo;
+            string pieceColor = piece.Color.ToString();
+            BitBoards.BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
+
+            BitBoards.BitBoardDict["SquaresOccupied"] ^= fromTo;
+            BitBoards.BitBoardDict["SquaresEmpty"] ^= fromTo;
+
+            // Move this piece from its previous square
+            // to its new square
+            oldSquare.Piece = null;
+            newSquare.Piece = piece;
+            piece.Square = newSquare;
+
+            Board.Turn = (Color)((int)Board.Turn * -1);
+
+            MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
+
+            return true;
+
+        }
+
+        /// <summary>
+        /// Determine if an interposing move gets the king out of check or not.
+        /// </summary>
+        /// <returns></returns>
+        public bool InterposesOutOfCheck(Square oldSquare, Square newSquare)
+        {
+            /// REASON : Consider the following situation:
+            /// 
+            /// OOXO!
+            /// OOOBY
+            /// OO!O!
+            /// OXOYY
+            /// KYYYQ
+            /// 
+            /// Key: O = Empty square
+            ///      X = Bishop moves (pseudolegal)
+            ///      Y = Queen moves (pseudolegal)
+            ///      ! = Interposing squares
+            ///      
+            ///      K = King
+            ///      Q = Queen
+            ///      B = Bishop
+            /// 
+            /// On 3 occasions, the queen can enter the pseudo-legal path of the bishop, but only one of those gets the king out of check.
+            /// We want to find that move and eliminate the others.
+
+            // Holds the current position, so the game can be restored once we're done making hypothetical moves.
+            Dictionary<string, ulong> resetDictionary = new Dictionary<string, ulong>();
+            Piece resetOldSquarePiece = oldSquare.Piece;
+            Piece? resetNewSquarePiece = newSquare.Piece; // Technically, the new square should never have a piece, but leaving this here just in case // TODO: Try removing this and see if problems occur
+            Square resetPiecesSquare = oldSquare;
+            Color resetTurn = Board.Turn; // Reset the turn on completed check.
+
+            foreach (var entry in BitBoards.BitBoardDict)
+                resetDictionary.Add(entry.Key, entry.Value);
+
+            // Make the hypothetical move.
+            TestInterposingMove(oldSquare, newSquare);
+
+            if (MoveGenerator.IsPieceStillChecking())
+            {
+                // Reset dictionary before returning
+                foreach (var entry in resetDictionary)
+                {
+                    // Reset piece & squares // TODO: This could be its own function
+                    oldSquare.Piece = resetOldSquarePiece;
+                    newSquare.Piece = resetNewSquarePiece;
+                    oldSquare.Piece.Square = oldSquare;
+                    Board.Turn = resetTurn;
+                    BitBoards.BitBoardDict[entry.Key] = entry.Value;
+                }
+
+                return false;
+            }
+
+            // Reset dictionary before returning
+            foreach (var entry in resetDictionary)
+            {
+                // Reset piece and squares // TODO: This could be its own function
+                oldSquare.Piece = resetOldSquarePiece;
+                newSquare.Piece = resetNewSquarePiece;
+                oldSquare.Piece.Square = oldSquare;
+                Board.Turn = resetTurn;
+                BitBoards.BitBoardDict[entry.Key] = entry.Value;
+            }
+
+            return true;
         }
 
         /// <summary>

@@ -13,6 +13,7 @@
             MouseDown="CanvasMain_MouseDown"
             PreviewMouseMove="CanvasMain_PreviewMouseMove"
             PreviewMouseUp="CanvasMain_PreviewMouseUp">
-        <Button Content="Button" Canvas.Left="1449" Canvas.Top="351" Click="Button_Click"/>
+        <Button Content="Button" Canvas.Left="1550" Canvas.Top="350" Click="Button_Click"/>
+        <Button Name="FreeMoveToggle" Content="Make Free Moves" Canvas.Left="1550" Canvas.Top="450" Click="FreeMoveToggle_Click"/>
     </Canvas>
 </Window>
