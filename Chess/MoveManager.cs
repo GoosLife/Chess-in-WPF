@@ -25,6 +25,8 @@ namespace Chess
         //*MAKE A MOVE*
         //*************
 
+        #region ACTUALLY MAKES MOVES & UPDATE BITBOARDS
+
         /// <summary>
         /// Moves a piece from 1 square to another and updates relevant bitboards
         /// </summary>
@@ -78,8 +80,21 @@ namespace Chess
                     Board.Pieces.Remove(newSquare.Piece);
 
                     // Remove piece attacks from attack sets // TODO: Implement this better - currently sets value to 0 for all attacksets.
-                    MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
-                    MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+                    if (newSquare.Piece.Color == Color.White)
+                    {
+                        MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+
+                        if (newSquare.Piece.Type == PieceType.Pawn)
+                            MoveGenerator.HypotheticalWhitePawnAttacks[newSquare.Piece] = 0;
+                    }
+                    else
+                    {
+                        MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
+
+                        if (newSquare.Piece.Type == PieceType.Pawn)
+                            MoveGenerator.HypotheticalBlackPawnAttacks[newSquare.Piece] = 0;
+                    }
+
                     MoveGenerator.AllAttacks[newSquare.Piece] = 0;
                 }
                 // Apply ^= fromto instead of ^= from, if no capture has taken place.
@@ -94,16 +109,6 @@ namespace Chess
                 oldSquare.Piece = null;
                 newSquare.Piece = piece;
                 piece.Square = newSquare;
-
-
-                // DEBUG: Writes all the affected bitboards to output from debug
-                //Trace.WriteLine("From: \n" + BitBoardAsBinaryMatrix(from));
-                //Trace.WriteLine("To: \n" + BitBoardAsBinaryMatrix(to));
-                //Trace.WriteLine("FromTo: \n" + BitBoardAsBinaryMatrix(fromTo));
-                //Trace.WriteLine("PieceBB: \n" + BitBoardAsBinaryMatrix(BitBoardDict[GetBitBoardByPiece(piece)]));
-                //Trace.WriteLine("ColorBB: \n" + BitBoardAsBinaryMatrix(BitBoardDict[pieceColor + "Pieces"]));
-                //Trace.WriteLine("OccSq: \n" + BitBoardAsBinaryMatrix(BitBoardDict["SquaresOccupied"]));
-                //Trace.WriteLine("EmpSq: \n" + BitBoardAsBinaryMatrix(BitBoardDict["SquaresEmpty"]));
 
                 Board.Turn = (Color)((int)Board.Turn * -1);
 
@@ -166,8 +171,15 @@ namespace Chess
                     Board.Pieces.Remove(newSquare.Piece);
 
                     // Remove piece attacks from attack sets // TODO: Implement this better - currently sets value to 0 for all attacksets.
-                    MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
-                    MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+                    if (newSquare.Piece.Color == Color.White)
+                    {
+                        MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+                    }
+                    else
+                    {
+                        MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
+                    }
+
                     MoveGenerator.AllAttacks[newSquare.Piece] = 0;
                 }
                 // Apply ^= fromto instead of ^= from, if no capture has taken place.
@@ -243,8 +255,15 @@ namespace Chess
                     Board.Pieces.Remove(newSquare.Piece);
 
                     // Remove piece attacks from attack sets // TODO: Implement this better - currently sets value to 0 for all attacksets.
-                    MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
-                    MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+                    if (newSquare.Piece.Color == Color.White)
+                    {
+                        MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+                    }
+                    else
+                    {
+                        MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
+                    }
+
                     MoveGenerator.AllAttacks[newSquare.Piece] = 0;
                 }
                 // Apply ^= fromto instead of ^= from, if no capture has taken place.
@@ -268,6 +287,11 @@ namespace Chess
             }
         }
 
+        #endregion
+
+        #endregion
+
+        #region CHECK IF MOVES ARE LEGAL DURING CHECK
         /// <summary>
         /// Makes a hypothetical, potentially interposing move. Since we only test moves we know are pseudolegal, this check is skipped, preventing the function from becoming recursive.
         /// Other than that, it is the same as MakeMove(Square oldSquare, Square newSquare)
@@ -306,7 +330,6 @@ namespace Chess
             MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
 
             return true;
-
         }
 
         /// <summary>
@@ -377,7 +400,9 @@ namespace Chess
 
             return true;
         }
+        #endregion
 
+        #region ALTERNATIVE WAYS TO MAKE MOVES - AI MOVES & PROGRAMMATIC MOVES
         /// <summary>
         /// The AI makes one legal move.
         /// </summary>
@@ -446,6 +471,22 @@ namespace Chess
             // Set piece sprite in correct place.
             Canvas.SetTop(pieceToMove.Sprite, (newSquare.Rank * 100) + (Square.Size / 2) - (Piece.SpriteSize / 2));
             Canvas.SetLeft(pieceToMove.Sprite, (newSquare.File * 100) + (Square.Size / 2) - (Piece.SpriteSize / 2));
+        }
+
+
+        // TODO: IMPLEMENT THIS
+        /// <summary>
+        /// Make a move without human intervention - i.e. moving the rook when the user has moved the king for castling.
+        /// </summary>
+        public void MakeProgramatticMove(Piece piece, Square newSquare)
+        {
+            MakeMove(piece.Square, newSquare);
+
+            // Set piece sprite in correct place.
+            Canvas.SetTop(piece.Sprite, (newSquare.Rank * 100) + (Square.Size / 2) - (Piece.SpriteSize / 2));
+            Canvas.SetLeft(piece.Sprite, (newSquare.File * 100) + (Square.Size / 2) - (Piece.SpriteSize / 2));
+
+            MoveGenerator.GetAllAttacks();
         }
 
         #endregion

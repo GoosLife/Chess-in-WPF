@@ -156,6 +156,8 @@ namespace Chess
             // Finally, pads the string with leading 0s to fill out the 8x8 matrix that represents the entire chessboard.
             string binary = Convert.ToString((long)input, to).PadLeft(64, '0');
 
+            int squareNumber = 1;
+
             // Break the output into an 8x8 matrix.
             binary = Regex.Replace(binary, "(.{" + 8 + "})", "$1" + Environment.NewLine);
 
