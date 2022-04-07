@@ -47,6 +47,8 @@ namespace Chess
 
             Ray.GenerateRays();
 
+            board.MoveManager.MoveGenerator.GetAllAttacks();
+
             #region DEBUG
             // DEBUG
             lblTurn.Content = board.Turn.ToString();

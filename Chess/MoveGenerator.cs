@@ -38,50 +38,38 @@ namespace Chess
         /// <param name="Board"></param>
         public void GetAllAttacks()
         {
-            //// Reset attack sets - there must be a better way to do this
-            //foreach (Piece piece in Board.Pieces)
-            //{
-            //    if (piece.Color == Color.White)
-            //    {
-            //        WhiteAttacks[piece] = 0;
-            //        HypotheticalWhitePawnAttacks[piece] = 0;
-            //    }
-            //    else
-            //    {
-            //        BlackAttacks[piece] = 0;
-            //        HypotheticalBlackPawnAttacks[piece] = 0;
-            //    }
-            //    AllAttacks[piece] = 0;
-            //}
-
             foreach (Piece piece in Board.Pieces)
             {
                 if (piece.Color == Color.White)
                 {
                     if (piece.Type == PieceType.Pawn)
                     {
-                        WhiteAttacks[piece] = GetMovesForWhitePawn(piece.Square.Coordinate);
+                        piece.Moveset = GetMovesForWhitePawn(piece.Square.Coordinate);
+                        WhiteAttacks[piece] = piece.Moveset;
                         HypotheticalWhitePawnAttacks[piece] = GetAllAttacksForWhitePawn(piece.Square.Coordinate);
-                        AllAttacks[piece] = WhiteAttacks[piece];
+                        AllAttacks[piece] = piece.Moveset;
                     }
                     else
                     {
-                        WhiteAttacks[piece] = GenerateMovesForPiece(piece);
-                        AllAttacks[piece] = WhiteAttacks[piece];
+                        piece.Moveset = GenerateMovesForPiece(piece);
+                        WhiteAttacks[piece] = piece.Moveset;
+                        AllAttacks[piece] = piece.Moveset;
                     }
                 }
                 else
                 {
                     if (piece.Type == PieceType.Pawn)
                     {
-                        BlackAttacks[piece] = GetMovesForBlackPawn(piece.Square.Coordinate);
+                        piece.Moveset = GetMovesForBlackPawn(piece.Square.Coordinate);
+                        BlackAttacks[piece] = piece.Moveset;
                         HypotheticalBlackPawnAttacks[piece] = GetAllAttacksForBlackPawn(piece.Square.Coordinate);
-                        AllAttacks[piece] = BlackAttacks[piece];
+                        AllAttacks[piece] = piece.Moveset;
                     }
                     else
                     {
-                        BlackAttacks[piece] = GenerateMovesForPiece(piece);
-                        AllAttacks[piece] = BlackAttacks[piece];
+                        piece.Moveset = GenerateMovesForPiece(piece);
+                        BlackAttacks[piece] = piece.Moveset;
+                        AllAttacks[piece] = piece.Moveset;
                     }
                 }
             }
@@ -105,8 +93,6 @@ namespace Chess
 
         public ulong GetMoves(Piece piece)
         {
-            GetAllAttacks();
-
             if (GetCheckingPiece() != null)
             {
                 return GetOutOfCheckMoves(piece);
@@ -130,22 +116,20 @@ namespace Chess
 
             // Get the piece performing check, if any
             Piece? checkingPiece = GetCheckingPiece();
-
-            ulong safeKingMoves = 0;    // If the piece IS a king, and the king can move to safety, this variable will store those valid moves.
+            
             ulong interposingMoves = 0; // If the piece ISN'T a king, but can move between the checking piece and the king, this will show those moves.
 
             // If a piece is putting the current king in check // TODO: This should never be null so this check might be unnecessary.
             if (checkingPiece != null)
             {
-                // If the piece is a king, see if it can move out of check
-                if (piece.Type == PieceType.King)
-                    safeKingMoves = MoveToSafety(piece); // TODO: Use this to always get safe moves for king
-                // Only pieces that AREN'T kings can make interposing moves
-                else
+                // If the piece is not a king, see if it can move between the king and the piece giving check.
+                if (piece.Type != PieceType.King)
                     interposingMoves = InterposingMoves(checkingPiece, piece); // Get interposing moves
+                else
+                    return GetMovesForKing(piece); // The king can make his regular moves out of check instead of interposing.
 
                 // Check if this piece can capture the piece delivering check
-                return TakeCheckingPiece(checkingPiece, piece) | safeKingMoves | interposingMoves;
+                return TakeCheckingPiece(checkingPiece, piece) | interposingMoves;
             }
 
             else
@@ -178,6 +162,7 @@ namespace Chess
                 
                     switch (piece.Color)
                     {
+                        // Pawns already have pseudo move sets in the form of Hypothetical[Color]PawnAttacks
                         case Color.White:
                             return GetMovesForWhitePawn(piece.Square.Coordinate);
 
@@ -189,19 +174,23 @@ namespace Chess
                     }
                 
                 case PieceType.Knight:
-                    return GetMovesForKnight(piece) & ~BitBoards.BitBoardDict[ownPieces];
+                    piece.PseudoMoveset = GetMovesForKnight(piece);
+                    return piece.PseudoMoveset & ~BitBoards.BitBoardDict[ownPieces];
 
-                case PieceType.King:
+                case PieceType.King: // Kings also have their own form of pseudo movesets
                     return GetMovesForKing(piece) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Rook:
-                    return GetMovesForRook(piece) & ~BitBoards.BitBoardDict[ownPieces];
+                    piece.PseudoMoveset = GetMovesForRook(piece, true);
+                    return GetMovesForRook(piece, false) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Bishop:
+                    piece.PseudoMoveset = GetDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]) | GetAntiDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]);
                     return GetMovesForBishop(piece) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Queen:
-                    return (GetMovesForBishop(piece) | GetMovesForRook(piece)) & ~BitBoards.BitBoardDict[ownPieces];
+                    piece.PseudoMoveset = (GetDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]) | GetAntiDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate])) | GetMovesForRook(piece, true);
+                    return (GetMovesForBishop(piece) | GetMovesForRook(piece, false)) & ~BitBoards.BitBoardDict[ownPieces];
 
                 default:
                     return 0;
@@ -376,16 +365,19 @@ namespace Chess
             // Get the opponents attackset, to make sure king doesn't move into check
             Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
 
-            foreach (var entry in piece.Color == Color.White ? BlackAttacks : WhiteAttacks)
+            foreach (Piece p in (piece.Color == Color.White ? Board.Pieces.Where(p => p.Color == Color.Black) : Board.Pieces.Where(p => p.Color == Color.White)))
             {
-                if (entry.Key.Type != PieceType.Pawn)
-                    opponentAttacks[entry.Key] = entry.Value;
+                if (p.Type != PieceType.Pawn)
+                    opponentAttacks[p] = p.PseudoMoveset;
             };
             
             foreach (var entry in piece.Color == Color.White ? HypotheticalBlackPawnAttacks : HypotheticalWhitePawnAttacks)
                 opponentAttacks[entry.Key] = entry.Value;
 
             string opponentPieces = piece.Color == Color.White ? Constants.bbBlackPieces : Constants.bbWhitePieces;
+
+            string color = piece.Color.ToString();
+            ulong ownPieces = BitBoards.BitBoardDict[color + "Pieces"];
 
             // The kings starting position
             Coordinate from = piece.Square.Coordinate;
@@ -408,41 +400,45 @@ namespace Chess
             ulong spot7 = startingPos >> 8;
             ulong spot8 = kingClipFileH >> 9;
 
-            //BACKUP
-            //ulong spot1 = kingClipFileA << 9;
-            //ulong spot2 = startingPos << 8;
-            //ulong spot3 = kingClipFileH << 7;
-            //ulong spot4 = kingClipFileH << 1;
-
-            //ulong spot5 = kingClipFileA >> 1;
-            //ulong spot6 = startingPos >> 7;
-            //ulong spot7 = kingClipFileA >> 8;
-            //ulong spot8 = kingClipFileA >> 9;
-
             ulong kingValid = spot1 | spot2 | spot3 | spot4 |
                               spot5 | spot6 | spot7 | spot8;
 
-            // Get name of color to pass to bitboard dictionary.
-            string color = piece.Color.ToString();
-            kingValid = kingValid & ~BitBoards.BitBoardDict[color + "Pieces"];
+            // Generate castling moves
+            switch (piece.Color)
+            {
+                case Color.White:
+                    // Check that piece can castle to that side, and that the path between rook and king is clear.
+                    if ((Board.EnPassantAndCastling.CanWhiteCastleShort()) && ((ownPieces | Constants.WhiteCastlingShortClear) == Constants.WhiteCastlingShortClear))
+                        kingValid ^= Constants.WhiteCastlingShortMask;
+                    if ((Board.EnPassantAndCastling.CanWhiteCastleLong()) && ((ownPieces | Constants.WhiteCastlingLongClear) == Constants.WhiteCastlingLongClear))
+                        kingValid ^= Constants.WhiteCastlingLongMask;
+                    break;
+                case Color.Black:
+                    if ((Board.EnPassantAndCastling.CanBlackCastleShort()) && ((ownPieces | Constants.BlackCastlingShortClear) == Constants.BlackCastlingShortClear))
+                        kingValid ^= Constants.BlackCastlingShortMask;
+                    if ((Board.EnPassantAndCastling.CanBlackCastleLong()) && ((ownPieces | Constants.BlackCastlingLongClear) == Constants.BlackCastlingLongClear))
+                        kingValid ^= Constants.BlackCastlingLongMask;
+                    break;
+            }
 
-            // DEBUG 
-            Trace.Write("--- THIS IS A NEW ATTEMPT ---");
+            // Get name of color to pass to bitboard dictionary.
+            kingValid = kingValid & ~ownPieces;
+
+
+            Trace.WriteLine("---NEXT ATTEMPT---");
 
             // Remove squares from kings moveset, that would move the king into check // TODO: Implement faster function than dictionary
             foreach (var attackset in opponentAttacks)
             {
-                // DEBUG:
-                if (attackset.Key.Square != null)
+                if(attackset.Key.Square != null)
                 {
-                    Trace.Write($"\n\nMoves for the {attackset.Key.Color} {attackset.Key.Type} on {attackset.Key.Square?.Coordinate}: \n" + BitBoards.BinaryMatrix(attackset.Value));
+                    Trace.WriteLine($"Attackset for {attackset.Key.Color} {attackset.Key.Type} on {attackset.Key.Square.Coordinate}:\n" + BitBoards.BinaryMatrix(attackset.Value));
                 }
-                else
-                    Trace.Write($"\n\nMoves for the {attackset.Key.Color} {attackset.Key.Type} that has been taken is hopefully empty.\n" + BitBoards.BinaryMatrix(attackset.Value));
 
-                kingValid ^= kingValid & (attackset.Value);                                          // Remove moves into check, as well as moves that take an opponent piece if that moves king into check.
-                                                                                                     // Because the potentially checking pieces attackset doesn't include squares with its own pieces,
-                                                                                                     // those moves are otherwise not removed.
+                // Remove moves into check, as well as moves that take an opponent piece if that moves king into check.
+                // Because the potentially checking pieces attackset doesn't include squares with its own pieces,
+                // those moves are otherwise not removed.
+                kingValid ^= kingValid & (attackset.Value);                                          
             }
 
             // Remove all squares next to the opponent king from the kings legal moveset.
@@ -502,7 +498,7 @@ namespace Chess
 
         #region Rook Move Generation
 
-        public ulong GetMovesForRook(Piece piece)
+        public ulong GetMovesForRook(Piece piece, bool isPseudoMoves)
         {
             // The rooks starting position
             Coordinate from = piece.Square.Coordinate;
@@ -511,7 +507,7 @@ namespace Chess
             byte square = Board.CoordinateValue[from];
 
             // Rooks can move to all free squares directly north, east, south and west of its starting square.
-            ulong rookValid = GetRankMoves(square) | GetFileMoves(square);
+            ulong rookValid = GetRankMoves(square, isPseudoMoves) | GetFileMoves(square, isPseudoMoves);
             return rookValid;
         }
 
@@ -533,18 +529,18 @@ namespace Chess
             // Get all diagonal and antidiagonal moves for whereever the bishop currently is.
             ulong bishopValid = GetDiagonalMoves(square, startPos) | GetAntiDiagonalMoves(square, startPos);
 
-            // DEBUG 
-            // Trace.WriteLine(BitBoards.BinaryMatrix(bishopValid));
             return bishopValid;
         }
 
         #endregion
 
         #region Generate Positive And Negative Moves
-        private ulong GetPositiveMoves(int rayDirection, byte square)
+        private ulong GetPositiveMoves(int rayDirection, byte square, bool isPseudoMoves)
         {
             ulong moves = Ray.Rays[rayDirection][square];
-            ulong blocker = moves & BitBoards.BitBoardDict[Constants.bbSquaresOccupied]; // moves on an empty board AND'ed with the current bitboard of all pieces.
+            ulong blocker = 0;
+
+            blocker = moves & BitBoards.BitBoardDict[Constants.bbSquaresOccupied]; // moves on an empty board AND'ed with the current bitboard of all pieces.
 
             // if this direction is eventually blocked off by a piece.
             if (blocker != 0)
@@ -553,15 +549,21 @@ namespace Chess
                 int blockerSquare = BitHelper.GetLeastSignificant1Bit(blocker);
 
                 moves = moves ^ Ray.Rays[rayDirection][blockerSquare];
+
+                if (isPseudoMoves)
+                    moves = moves | (ulong)1 << blockerSquare;
+                
             }
 
             return moves;
         }
 
-        private ulong GetNegativeMoves(int rayDirection, byte square)
+        private ulong GetNegativeMoves(int rayDirection, byte square, bool isPseudoMoves)
         {
             ulong moves = Ray.Rays[rayDirection][square];
-            ulong blocker = moves & BitBoards.BitBoardDict[Constants.bbSquaresOccupied];
+            ulong blocker = 0;
+
+            blocker = moves & BitBoards.BitBoardDict[Constants.bbSquaresOccupied];
 
             // if this direction is eventually blocked off by a piece.
             if (blocker != 0)
@@ -570,6 +572,10 @@ namespace Chess
                 int blockerSquare = BitHelper.GetMostSignificant1Bit(blocker);
 
                 moves = moves ^ Ray.Rays[rayDirection][blockerSquare];
+
+                if (isPseudoMoves)
+                    moves = moves | (ulong)1 << blockerSquare;
+                Trace.WriteLine($"Blocker square for {Board.SquareDict[Board.CoordinateValue.FirstOrDefault(c => c.Value == square).Key].Piece} on {Board.CoordinateValue.FirstOrDefault(c => c.Value == square).Key}: \n" + BitBoards.BinaryMatrix((ulong) 1 << blockerSquare));
             }
 
             return moves;
@@ -583,10 +589,10 @@ namespace Chess
         /// </summary>
         /// <param name="coordinate"></param>
         /// <returns></returns>
-        private ulong GetRankMoves(byte square)
+        private ulong GetRankMoves(byte square, bool isPseudoMoves)
         {
-            ulong westMoves = GetPositiveMoves(Ray.West, square);
-            ulong eastMoves = GetNegativeMoves(Ray.East, square);
+            ulong westMoves = GetPositiveMoves(Ray.West, square, isPseudoMoves);
+            ulong eastMoves = GetNegativeMoves(Ray.East, square, isPseudoMoves);
 
             ulong moves = eastMoves | westMoves; 
             return moves;
@@ -597,10 +603,10 @@ namespace Chess
         /// </summary>
         /// <param name="square"></param>
         /// <returns></returns>
-        private ulong GetFileMoves(byte square)
+        private ulong GetFileMoves(byte square, bool isPseudoMoves)
         {
-            ulong northMoves = GetPositiveMoves(Ray.North, square);
-            ulong southMoves = GetNegativeMoves(Ray.South, square);
+            ulong northMoves = GetPositiveMoves(Ray.North, square, isPseudoMoves);
+            ulong southMoves = GetNegativeMoves(Ray.South, square, isPseudoMoves);
 
             ulong moves = northMoves | southMoves;
             return moves;
@@ -754,89 +760,92 @@ namespace Chess
         public ulong TakeCheckingPiece(Piece checkingPiece, Piece attacker)
         {
             // Get all attacks to ensure properly updated bitboards TODO: Optimize this
-            GetAllAttacks();
+            // GetAllAttacks();
 
             // Dictionary of attacks based on side
-            Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
+            //Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
 
             // The square that we are checking whether is under attacks
             ulong attackedSquare;
 
             attackedSquare = (ulong)1 << Board.CoordinateValue[checkingPiece.Square.Coordinate];
 
-            // Get turn & determine which king/attack set to check against
-            if (checkingPiece.Color == Color.White)
-            {
-                opponentAttacks = BlackAttacks;
-            }
-            else
-            {
-                opponentAttacks = WhiteAttacks;
-            }
+            //// Get turn & determine which king/attack set to check against
+            //if (checkingPiece.Color == Color.White)
+            //{
+            //    opponentAttacks = BlackAttacks;
+            //}
+            //else
+            //{
+            //    opponentAttacks = WhiteAttacks;
+            //}
 
-            ulong myMoves = opponentAttacks[attacker]; // DEBUG: So I can immediately see the value of opponentAttacks[attacker] in the locals tab :)
+/*            ulong myMoves = opponentAttacks[attacker]; */// DEBUG: So I can immediately see the value of opponentAttacks[attacker] in the locals tab :)
 
             // Check for possible attacks by the piece attempting to move.
-            if ((attackedSquare & opponentAttacks[attacker]) != 0)
-                return attackedSquare & opponentAttacks[attacker];
+            if ((attackedSquare & attacker.Moveset) != 0)
+                return attackedSquare & attacker.Moveset;
 
             // No attacks have been found:  moveset is empty.
             return 0;
         }
 
-        /// <summary>
-        /// Gets the moves that can get the king to safety
-        /// </summary>
-        /// <param name="attackedKing"></param>
-        /// <returns></returns>
-        public ulong MoveToSafety(Piece attackedKing)
-        {
-            // Dictionary of attacks based on side
-            Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
+        // OBSOLETE:
+        //   THE KING CAN NOW _ALWAYS_ ONLY MOVE TO SAFE SQUARES.
 
-            // All the squares the king can normally move to
-            ulong kingMoves = GenerateMovesForPiece(attackedKing);
+        ///// <summary>
+        ///// Gets the moves that can get the king to safety
+        ///// </summary>
+        ///// <param name="attackedKing"></param>
+        ///// <returns></returns>
+        //public ulong MoveToSafety(Piece attackedKing)
+        //{
+        //    // Dictionary of attacks based on side
+        //    Dictionary<Piece, ulong> opponentAttacks = new Dictionary<Piece, ulong>();
 
-            // Get turn & determine which attack set to check against
-            if (Board.Turn == Color.White)
-            {
-                opponentAttacks = BlackAttacks;
-            }
-            else
-            {
-                opponentAttacks = WhiteAttacks;
-            }
+        //    // All the squares the king can normally move to
+        //    ulong kingMoves = GenerateMovesForPiece(attackedKing);
 
-            // Check for attacks by all piece types
-            foreach (var attack in opponentAttacks)
-            {
-                if ((kingMoves & attack.Value) != 0)
-                {
-                    kingMoves ^= (kingMoves & attack.Value); /* VALID SQUARES = O
-                                                                ILLEGAL SQUARES = X
-                                                                KING = K
-                                                                ROOK = R
-                                                                KNIGHT = N
+        //    // Get turn & determine which attack set to check against
+        //    if (Board.Turn == Color.White)
+        //    {
+        //        opponentAttacks = BlackAttacks;
+        //    }
+        //    else
+        //    {
+        //        opponentAttacks = WhiteAttacks;
+        //    }
+
+        //    // Check for attacks by all piece types
+        //    foreach (var attack in opponentAttacks)
+        //    {
+        //        if ((kingMoves & attack.Value) != 0)
+        //        {
+        //            /* kingMoves ^= (kingMoves & attack.Value); /* VALID SQUARES = O
+        //                                                        ILLEGAL SQUARES = X
+        //                                                        KING = K
+        //                                                        ROOK = R
+        //                                                        KNIGHT = N
                                                         
-                                                                Pseudolegal king moves:     Pseudolegal rook moves:     King moves & rook moves:
-                                                                XXNX                        XXNO                        XXNX
-                                                                OOOR                        OOOR                        OOOR
-                                                                OKOX                        XKXO                        XKXX
+        //                                                        Pseudolegal king moves:     Pseudolegal rook moves:     King moves & rook moves:
+        //                                                        XXNX                        XXNO                        XXNX
+        //                                                        OOOR                        OOOR                        OOOR
+        //                                                        OKOX                        XKXO                        XKXX
                                                                 
-                                                                This is the opposite of what we want, so we reverse it by exlusive or'ing it with the kings original moveset:
+        //                                                        This is the opposite of what we want, so we reverse it by exlusive or'ing it with the kings original moveset:
 
-                                                                Pseudolegal king moves:     King moves & rook moves:    Moves out of check (king moves XOR (king moves & rook moves))
-                                                                XXNX                        XXNX                        XXNX
-                                                                OOOR                        OOOR                        XXXR
-                                                                OKOX                        XKXX                        OKOX
-                                                             */
+        //                                                        Pseudolegal king moves:     King moves & rook moves:    Moves out of check (king moves XOR (king moves & rook moves))
+        //                                                        XXNX                        XXNX                        XXNX
+        //                                                        OOOR                        OOOR                        XXXR
+        //                                                        OKOX                        XKXX                        OKOX
+        //                                                     */
                                                               
-                }
-            }
+        //        }
+        //    }
 
-            // Return the kings leftover legal moves
-            return kingMoves;
-        }
+        //    // Return the kings leftover legal moves
+        //    return kingMoves;
+        //}
 
         public ulong InterposingMoves(Piece checkingPiece, Piece p)
         {
@@ -868,6 +877,9 @@ namespace Chess
                     defendingPieceInterposingMoves |= (ulong)1 << moveToAdd;
                 }
             }
+
+            // Reset attacksets to the current board
+            GetAllAttacks();
 
             // Moves that can block the sliding pieces direct path to the king
             return checkingPieceMoveset & defendingPieceInterposingMoves;

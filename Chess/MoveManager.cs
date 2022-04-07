@@ -28,179 +28,15 @@ namespace Chess
         #region ACTUALLY MAKES MOVES & UPDATE BITBOARDS
 
         /// <summary>
-        /// Moves a piece from 1 square to another and updates relevant bitboards
+        /// Move a piece by moving its sprite in the GUI
         /// </summary>
         /// <returns></returns>
         public bool MakeMove(double oldX, double oldY, double newX, double newY)
         {
-            Coordinate newSquareCoords;
-            Square newSquare = Board.GetSquare(Board, newX, newY, out newSquareCoords);
+            Square newSquare = Board.GetSquare(Board, newX, newY);
+            Square oldSquare = Board.GetSquare(Board, oldX, oldY);
 
-            Coordinate oldSquareCoords;
-            Square oldSquare = Board.GetSquare(Board, oldX, oldY, out oldSquareCoords);
-
-            Piece piece = oldSquare.Piece;
-
-            if ((newSquare.Piece != null && newSquare.Piece.Color == piece.Color) || piece.Color != Board.Turn)
-            {
-                return false;
-            }
-
-            if (!MoveGenerator.IsPseudoLegal(oldSquare, newSquare))
-            {
-                return false;
-            }
-            else
-            {
-                ulong fromBoard = BitBoards.BitBoardDict["SquaresOccupied"];
-
-                // Update bitboards
-
-                ulong from = (ulong)1 << (int)Board.CoordinateValue[oldSquareCoords];
-                ulong to = (ulong)1 << (int)Board.CoordinateValue[newSquareCoords];
-                ulong fromTo = from ^ to;
-                BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(piece)] ^= fromTo;
-                string pieceColor = piece.Color.ToString();
-                BitBoards.BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
-
-                // remove opposing piece from the game if any
-                if (newSquare.Piece != null)
-                {
-                    newSquare.Piece.Sprite.Source = null;
-                    newSquare.Piece.Square = null;
-
-                    BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(newSquare.Piece)] ^= to;
-
-                    string takenPieceColor = newSquare.Piece.Color.ToString();
-                    BitBoards.BitBoardDict[takenPieceColor + "Pieces"] ^= to; // 
-
-                    BitBoards.BitBoardDict["SquaresOccupied"] ^= from;
-                    BitBoards.BitBoardDict["SquaresEmpty"] ^= from;
-
-                    Board.Pieces.Remove(newSquare.Piece);
-
-                    // Remove piece attacks from attack sets // TODO: Implement this better - currently sets value to 0 for all attacksets.
-                    if (newSquare.Piece.Color == Color.White)
-                    {
-                        MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
-
-                        if (newSquare.Piece.Type == PieceType.Pawn)
-                            MoveGenerator.HypotheticalWhitePawnAttacks[newSquare.Piece] = 0;
-                    }
-                    else
-                    {
-                        MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
-
-                        if (newSquare.Piece.Type == PieceType.Pawn)
-                            MoveGenerator.HypotheticalBlackPawnAttacks[newSquare.Piece] = 0;
-                    }
-
-                    MoveGenerator.AllAttacks[newSquare.Piece] = 0;
-                }
-                // Apply ^= fromto instead of ^= from, if no capture has taken place.
-                else
-                {
-                    BitBoards.BitBoardDict["SquaresOccupied"] ^= fromTo;
-                    BitBoards.BitBoardDict["SquaresEmpty"] ^= fromTo;
-                }
-
-                // Move this piece from its previous square
-                // to its new square
-                oldSquare.Piece = null;
-                newSquare.Piece = piece;
-                piece.Square = newSquare;
-
-                Board.Turn = (Color)((int)Board.Turn * -1);
-
-                MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
-
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Moves a piece from 1 square to another and updates relevant bitboards, but pieces can move freely. Useful for setting up boards.
-        /// </summary>
-        /// <returns></returns>
-        public bool MakeFreeMove(double oldX, double oldY, double newX, double newY)
-        {
-            Coordinate newSquareCoords;
-            Square newSquare = Board.GetSquare(Board, newX, newY, out newSquareCoords);
-
-            Coordinate oldSquareCoords;
-            Square oldSquare = Board.GetSquare(Board, oldX, oldY, out oldSquareCoords);
-
-            Piece piece = oldSquare.Piece;
-
-            if ((newSquare.Piece != null && newSquare.Piece == piece))
-            {
-                return false;
-            }
-
-            //if (!MoveGenerator.IsPseudoLegal(oldSquare, newSquare))
-            //{
-            //    return false;
-            //}
-            //else
-            //{
-            ulong fromBoard = BitBoards.BitBoardDict["SquaresOccupied"];
-
-                // Update bitboards
-
-                ulong from = (ulong)1 << (int)Board.CoordinateValue[oldSquareCoords];
-                ulong to = (ulong)1 << (int)Board.CoordinateValue[newSquareCoords];
-                ulong fromTo = from ^ to;
-                BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(piece)] ^= fromTo;
-                string pieceColor = piece.Color.ToString();
-                BitBoards.BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
-
-                // remove opposing piece from the game if any
-                if (newSquare.Piece != null)
-                {
-                    newSquare.Piece.Sprite.Source = null;
-                    newSquare.Piece.Square = null;
-
-                    BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(newSquare.Piece)] ^= to;
-
-                    string takenPieceColor = newSquare.Piece.Color.ToString();
-                    BitBoards.BitBoardDict[takenPieceColor + "Pieces"] ^= to; // 
-
-                    BitBoards.BitBoardDict["SquaresOccupied"] ^= from;
-                    BitBoards.BitBoardDict["SquaresEmpty"] ^= from;
-
-                    Board.Pieces.Remove(newSquare.Piece);
-
-                    // Remove piece attacks from attack sets // TODO: Implement this better - currently sets value to 0 for all attacksets.
-                    if (newSquare.Piece.Color == Color.White)
-                    {
-                        MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
-                    }
-                    else
-                    {
-                        MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
-                    }
-
-                    MoveGenerator.AllAttacks[newSquare.Piece] = 0;
-                }
-                // Apply ^= fromto instead of ^= from, if no capture has taken place.
-                else
-                {
-                    BitBoards.BitBoardDict["SquaresOccupied"] ^= fromTo;
-                    BitBoards.BitBoardDict["SquaresEmpty"] ^= fromTo;
-                }
-
-                // Move this piece from its previous square
-                // to its new square
-                oldSquare.Piece = null;
-                newSquare.Piece = piece;
-                piece.Square = newSquare;
-
-                Board.Turn = (Color)((int)Board.Turn * -1);
-
-                MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
-
-                return true;
-            //}
+            return MakeMove(oldSquare, newSquare);
         }
 
         /// <summary>
@@ -215,7 +51,8 @@ namespace Chess
 
             Piece piece = oldSquare.Piece;
 
-            if ((newSquare.Piece != null && newSquare.Piece.Color == piece.Color) || piece.Color != Board.Turn)
+            // THIS IS NOW CHECKED BY THE MOVE GENERATOR
+            if (piece.Color != Board.Turn)
             {
                 return false;
             }
@@ -226,6 +63,52 @@ namespace Chess
             }
             else
             {
+                // Check if move is a castling move
+                if (piece.Type == PieceType.King)
+                {
+                    switch (piece.Color)
+                    {
+                        case Color.White:
+                            // If the move is a short castle, and short castle is currently allowed
+                            if (((ulong) 1 << (Board.CoordinateValue[oldSquareCoords]) | ((ulong) 1 << Board.CoordinateValue[newSquareCoords])) == Constants.WhiteCastlingShortMask && Board.EnPassantAndCastling.CanWhiteCastleShort())
+                            {
+                                MakeProgrammaticMove(Board.SquareDict[Coordinate.H1].Piece, Board.SquareDict[Coordinate.F1]);
+                                Board.Turn = (Color)((int)Board.Turn * -1); // Reset turn after making the "extra" rook move. Otherwise, the game thinks black used their turn moving the white rook.
+                            }
+                            // ... if the move is a long castle, and long castle is currently allowed
+                            else if (((ulong) 1 << Board.CoordinateValue[oldSquareCoords] | (ulong) 1 << Board.CoordinateValue[newSquareCoords]) == Constants.WhiteCastlingLongMask && Board.EnPassantAndCastling.CanWhiteCastleLong())
+                            {
+                                MakeProgrammaticMove(Board.SquareDict[Coordinate.A1].Piece, Board.SquareDict[Coordinate.D1]);
+                                Board.Turn = (Color)((int)Board.Turn * -1); // Reset turn after making the "extra" rook move. Otherwise, the game thinks black used their turn moving the white rook.
+                            }
+
+                            // King has moved, disable castling rights.
+                            Board.EnPassantAndCastling.DisableWhiteShortCastling();
+                            Board.EnPassantAndCastling.DisableWhiteLongCastling();
+
+                            break;
+
+                        case Color.Black:
+                            // If the move is a short castle, and short castle is currently allowed
+                            if (((ulong)1 << (Board.CoordinateValue[oldSquareCoords]) | ((ulong)1 << Board.CoordinateValue[newSquareCoords])) == Constants.BlackCastlingShortMask && Board.EnPassantAndCastling.CanBlackCastleShort())
+                            {
+                                MakeProgrammaticMove(Board.SquareDict[Coordinate.H8].Piece, Board.SquareDict[Coordinate.F8]);
+                                Board.Turn = (Color)((int)Board.Turn * -1); // Reset turn after making the "extra" rook move. Otherwise, the game thinks black used their turn moving the white rook.
+                            }
+                            else if (((ulong)1 << (Board.CoordinateValue[oldSquareCoords]) | ((ulong)1 << Board.CoordinateValue[newSquareCoords])) == Constants.BlackCastlingLongMask && Board.EnPassantAndCastling.CanBlackCastleLong())
+                            {
+                                MakeProgrammaticMove(Board.SquareDict[Coordinate.A1].Piece, Board.SquareDict[Coordinate.D1]);
+                                Board.Turn = (Color)((int)Board.Turn * -1); // Reset turn after making the "extra" rook move. Otherwise, the game thinks black used their turn moving the white rook.
+                            }
+
+                            // King has moved, disable castling rights.
+                            Board.EnPassantAndCastling.DisableBlackShortCastling();
+                            Board.EnPassantAndCastling.DisableBlackLongCastling();
+
+                            break;
+                    }
+                }
+
                 ulong fromBoard = BitBoards.BitBoardDict["SquaresOccupied"];
 
                 // Update bitboards
@@ -283,8 +166,104 @@ namespace Chess
 
                 MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
 
+                // TODO: This should probably be in its own class.
+                // If a piece is in check, and there are no more legal moves, game ends in checkmate.
+                if (MoveGenerator.GetCheckingPiece() != null && IsCheckMate())
+                {
+                    Trace.Write("Checkmate has occured!"); // TODO: Implement checkmate game over stuff
+                }
+                else if (IsStaleMate())
+                {
+                    Trace.WriteLine("Stalemate has occurred!"); // TODO: Implement stalemate game over stuff.
+                }
+
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Moves a piece from 1 square to another and updates relevant bitboards, but pieces can move freely. Useful for setting up boards.
+        /// </summary>
+        /// <returns></returns>
+        public bool MakeFreeMove(double oldX, double oldY, double newX, double newY)
+        {
+            Coordinate newSquareCoords;
+            Square newSquare = Board.GetSquare(Board, newX, newY, out newSquareCoords);
+
+            Coordinate oldSquareCoords;
+            Square oldSquare = Board.GetSquare(Board, oldX, oldY, out oldSquareCoords);
+
+            Piece piece = oldSquare.Piece;
+
+            if ((newSquare.Piece != null && newSquare.Piece == piece))
+            {
+                return false;
+            }
+
+            //if (!MoveGenerator.IsPseudoLegal(oldSquare, newSquare))
+            //{
+            //    return false;
+            //}
+            //else
+            //{
+            ulong fromBoard = BitBoards.BitBoardDict["SquaresOccupied"];
+
+            // Update bitboards
+
+            ulong from = (ulong)1 << (int)Board.CoordinateValue[oldSquareCoords];
+            ulong to = (ulong)1 << (int)Board.CoordinateValue[newSquareCoords];
+            ulong fromTo = from ^ to;
+            BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(piece)] ^= fromTo;
+            string pieceColor = piece.Color.ToString();
+            BitBoards.BitBoardDict[pieceColor + "Pieces"] ^= fromTo;
+
+            // remove opposing piece from the game if any
+            if (newSquare.Piece != null)
+            {
+                newSquare.Piece.Sprite.Source = null;
+                newSquare.Piece.Square = null;
+
+                BitBoards.BitBoardDict[BitBoards.GetBitBoardByPiece(newSquare.Piece)] ^= to;
+
+                string takenPieceColor = newSquare.Piece.Color.ToString();
+                BitBoards.BitBoardDict[takenPieceColor + "Pieces"] ^= to; // 
+
+                BitBoards.BitBoardDict["SquaresOccupied"] ^= from;
+                BitBoards.BitBoardDict["SquaresEmpty"] ^= from;
+
+                Board.Pieces.Remove(newSquare.Piece);
+
+                // Remove piece attacks from attack sets // TODO: Implement this better - currently sets value to 0 for all attacksets.
+                if (newSquare.Piece.Color == Color.White)
+                {
+                    MoveGenerator.WhiteAttacks[newSquare.Piece] = 0;
+                }
+                else
+                {
+                    MoveGenerator.BlackAttacks[newSquare.Piece] = 0;
+                }
+
+                MoveGenerator.AllAttacks[newSquare.Piece] = 0;
+            }
+            // Apply ^= fromto instead of ^= from, if no capture has taken place.
+            else
+            {
+                BitBoards.BitBoardDict["SquaresOccupied"] ^= fromTo;
+                BitBoards.BitBoardDict["SquaresEmpty"] ^= fromTo;
+            }
+
+            // Move this piece from its previous square
+            // to its new square
+            oldSquare.Piece = null;
+            newSquare.Piece = piece;
+            piece.Square = newSquare;
+
+            Board.Turn = (Color)((int)Board.Turn * -1);
+
+            MoveGenerator.GetAllAttacks(); // store all attacks from the board as it looks after the latest move.
+
+            return true;
+            // }
         }
 
         #endregion
@@ -415,7 +394,7 @@ namespace Chess
                 if (piece.Color == Board.Turn)
                 {
                     // The bitboard containing all legal moves for the piece.
-                    ulong allMoves = MoveGenerator.GetMoves(piece);
+                    ulong allMoves = piece.Moveset;
 
                     // A list of the bytes representing the individual squares that the piece can move to.
                     List<byte> individualMoves = new List<byte>();
@@ -440,7 +419,7 @@ namespace Chess
             {
                 Random pieceSelector = new Random();
                 List<Piece> eligiblePieces = new List<Piece>(); // Stores only those pieces that have potential moves. I.e., if a piece is shown to have no legal moves, we don't have to check it again.
-                
+
                 foreach (var value in Board.Pieces)
                 {
                     eligiblePieces.Add(value);
@@ -450,7 +429,6 @@ namespace Chess
                 do
                 {
                     pieceToMove = Board.Pieces[pieceSelector.Next(0, eligiblePieces.Count)];
-                    Trace.Write($"Moves for {Board.Pieces.Where(p => p == pieceToMove).First().Type} {Board.Pieces.Where(p => p == pieceToMove).First().Color} {Board.Pieces.Where(p => p == pieceToMove).First().Moves.Count}");
                     eligiblePieces.Remove(pieceToMove);
                 } while ((!(pieceToMove.Moves.Count > 0)));
 
@@ -473,12 +451,12 @@ namespace Chess
             Canvas.SetLeft(pieceToMove.Sprite, (newSquare.File * 100) + (Square.Size / 2) - (Piece.SpriteSize / 2));
         }
 
+        // TODO: Make sure piece is never null in MakeProgrammatic move, by disabling castling rights when rook has moved.
 
-        // TODO: IMPLEMENT THIS
         /// <summary>
         /// Make a move without human intervention - i.e. moving the rook when the user has moved the king for castling.
         /// </summary>
-        public void MakeProgramatticMove(Piece piece, Square newSquare)
+        public void MakeProgrammaticMove(Piece piece, Square newSquare)
         {
             MakeMove(piece.Square, newSquare);
 
@@ -487,6 +465,37 @@ namespace Chess
             Canvas.SetLeft(piece.Sprite, (newSquare.File * 100) + (Square.Size / 2) - (Piece.SpriteSize / 2));
 
             MoveGenerator.GetAllAttacks();
+        }
+
+        #endregion
+
+        #region 
+
+        // TODO: Move this to its own class probably - a Game Manager or something.
+        public bool IsCheckMate()
+        {
+            // If the color to move next turn has no moves, return check mate.
+
+            foreach (Piece piece in Board.Pieces.Where(p => p.Color == Board.Turn))
+            {
+                if (MoveGenerator.GetOutOfCheckMoves(piece) > 0)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public bool IsStaleMate()
+        {
+            // If the color to move next turn has no legal moves, but isn't in check, it's a stale mate.
+
+            foreach (Piece piece in Board.Pieces.Where(p => p.Color == Board.Turn))
+            {
+                if (MoveGenerator.GenerateMovesForPiece(piece) > 0)
+                    return false;
+            }
+
+            return true;
         }
 
         #endregion

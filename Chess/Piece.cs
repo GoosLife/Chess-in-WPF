@@ -51,5 +51,9 @@ namespace Chess
         public abstract Image CreateSprite(double topPos, double leftPos, Color color);
 
         public List<byte> Moves { get; set; } = new List<byte>();
+        public ulong Moveset { get; set; }
+
+        // Pseudolegal moves for piece
+        public ulong PseudoMoveset { get; set; }
     }
 }

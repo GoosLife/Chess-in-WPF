@@ -52,6 +52,8 @@ namespace Chess
 
         public MoveManager MoveManager { get; set; }
 
+        public EnPassantAndCastling EnPassantAndCastling = new EnPassantAndCastling();
+
         public Board()
         {
             MoveManager = new MoveManager(this);

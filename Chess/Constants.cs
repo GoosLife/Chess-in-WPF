@@ -67,5 +67,26 @@ namespace Chess
 
         public const string bbSquaresOccupied = "SquaresOccupied";
         #endregion
+
+        #region Castling
+
+        // King to and from square that indicates castling
+        public const ulong WhiteCastlingShortMask = 0xA;
+        public const ulong WhiteCastlingLongMask = 0x28;
+        public const ulong BlackCastlingShortMask = 0xA00000000000000;
+        public const ulong BlackCastlingLongMask = 0x2800000000000000;
+
+        // Rook destination squares after castling
+        public const ulong WhiteRookShortCastlingDestination = 0x4;
+        public const ulong WhiteRookLongCastlingDestination = 0x10;
+        public const ulong BlackRookShortCastlingDestination = 0x400000000000000;
+        public const ulong BlackRookLongCastlingDestination = 0x1000000000000000;
+
+        // Check squares between king & rook are clear
+        public const ulong WhiteCastlingShortClear = 0xFFFFFFFFFFFFFFF9;
+        public const ulong WhiteCastlingLongClear = 0xFFFFFFFFFFFFFF9F;
+        public const ulong BlackCastlingShortClear = 0xF9FFFFFFFFFFFFFF;
+        public const ulong BlackCastlingLongClear = 0x9FFFFFFFFFFFFFFF;
+        #endregion
     }
 }

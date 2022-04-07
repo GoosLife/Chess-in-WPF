@@ -65,7 +65,6 @@ namespace Chess
                 }
 
                 eastRays[i] = ray;
-                // Trace.WriteLine("Piece is on " + ((Coordinate)Board.CoordinateValue[(Coordinate)i])); // DEBUG: THIS IS HOW YOU GET THE RELEVANT BITBOARD FROM A PIECES STARTING SQUARE.
             }
             return eastRays;
         }
