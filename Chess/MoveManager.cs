@@ -97,7 +97,7 @@ namespace Chess
                             }
                             else if (((ulong)1 << (Board.CoordinateValue[oldSquareCoords]) | ((ulong)1 << Board.CoordinateValue[newSquareCoords])) == Constants.BlackCastlingLongMask && Board.EnPassantAndCastling.CanBlackCastleLong())
                             {
-                                MakeProgrammaticMove(Board.SquareDict[Coordinate.A1].Piece, Board.SquareDict[Coordinate.D1]);
+                                MakeProgrammaticMove(Board.SquareDict[Coordinate.A8].Piece, Board.SquareDict[Coordinate.D8]);
                                 Board.Turn = (Color)((int)Board.Turn * -1); // Reset turn after making the "extra" rook move. Otherwise, the game thinks black used their turn moving the white rook.
                             }
 

@@ -181,15 +181,19 @@ namespace Chess
                     return GetMovesForKing(piece) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Rook:
-                    piece.PseudoMoveset = GetMovesForRook(piece, true);
+                    piece.PseudoMoveset = GetXRayForRook(piece);
+                    Trace.WriteLine("HELLO??????????????");
+                    Trace.WriteLine(BitBoards.BinaryMatrix(piece.PseudoMoveset));
                     return GetMovesForRook(piece, false) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Bishop:
-                    piece.PseudoMoveset = GetDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]) | GetAntiDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]);
+                    piece.PseudoMoveset = GetMovesForBishop(piece);// GetDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]) | GetAntiDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]);
                     return GetMovesForBishop(piece) & ~BitBoards.BitBoardDict[ownPieces];
 
                 case PieceType.Queen:
-                    piece.PseudoMoveset = (GetDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]) | GetAntiDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate])) | GetMovesForRook(piece, true);
+                    Queen queenPiece = (Queen)piece;
+                    queenPiece.PseudoMovesetDiagonal = (GetDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]) | GetAntiDiagonalMask(Board.CoordinateValue[piece.Square.Coordinate]));
+                    queenPiece.PseudoMovesetStraight =  GetMovesForRook(piece, true);
                     return (GetMovesForBishop(piece) | GetMovesForRook(piece, false)) & ~BitBoards.BitBoardDict[ownPieces];
 
                 default:
@@ -210,8 +214,8 @@ namespace Chess
 
             ulong pushOne = (startPos << 8) & BitBoards.BitBoardDict["SquaresEmpty"]; // The square directly in front of the pawn.
             ulong pushTwo = pushOne << 8 & BitBoards.BitBoardDict["SquaresEmpty"] & Constants.Rank4; // If the square directly in front of the pushOne square is on the 4th rank,
-                                                                                                 // meaning the pawn is on its starting square, it can move also move to the
-                                                                                                 // 2nd square ahead of it.
+                                                                                                     // meaning the pawn is on its starting square, it can move also move to the
+                                                                                                     // 2nd square ahead of it.
 
             ulong validPushes = pushOne | pushTwo; // A combination of all valid pushes
 
@@ -219,6 +223,18 @@ namespace Chess
             ulong validAttacks = GetAttacksForWhitePawn(from);
 
             ulong validMoves = validPushes | validAttacks; // Bitboard containing all possible moves for a pawn.
+
+            // Remove moves from pawn if it is pinned.
+            var potentialPins = GetPins(Board.SquareDict[from].Piece);
+            ulong kingPos = BitBoards.BitBoardDict[Constants.bbWhiteKing];            
+
+            foreach (var entry in potentialPins)
+            {
+                if ((entry.Value & startPos & kingPos) > 0) // If x-ray'd attackset hits this piece (i.e., is in line with it) and hits the king (i.e., the piece is pinned)...
+                {
+                    return validMoves & entry.Value; // ... return only moves on the pinned line.
+                }
+            }
 
             return validMoves;
         }
@@ -339,10 +355,6 @@ namespace Chess
             ulong knightValid = spot1 | spot2 | spot3 | spot4 |
                                 spot5 | spot6 | spot7 | spot8;
 
-            // Get name of color to pass to bitboard dictionary.
-            string color = piece.Color.ToString();
-            knightValid = knightValid & ~BitBoards.BitBoardDict[color + "Pieces"]; // Knight can only move to squares NOT containing pieces of its own color.
-
             return knightValid;
         }
 
@@ -424,17 +436,13 @@ namespace Chess
             // Get name of color to pass to bitboard dictionary.
             kingValid = kingValid & ~ownPieces;
 
-
-            Trace.WriteLine("---NEXT ATTEMPT---");
-
             // Remove squares from kings moveset, that would move the king into check // TODO: Implement faster function than dictionary
             foreach (var attackset in opponentAttacks)
             {
-                if(attackset.Key.Square != null)
+                if (attackset.Key.Square != null)
                 {
-                    Trace.WriteLine($"Attackset for {attackset.Key.Color} {attackset.Key.Type} on {attackset.Key.Square.Coordinate}:\n" + BitBoards.BinaryMatrix(attackset.Value));
+                    Trace.WriteLine($"Moves for {attackset.Key.Color} {attackset.Key.Type} on {attackset.Key.Square.Coordinate}: \n" + BitBoards.BinaryMatrix(attackset.Value));
                 }
-
                 // Remove moves into check, as well as moves that take an opponent piece if that moves king into check.
                 // Because the potentially checking pieces attackset doesn't include squares with its own pieces,
                 // those moves are otherwise not removed.
@@ -511,6 +519,19 @@ namespace Chess
             return rookValid;
         }
 
+        public ulong GenerateXRayMovesForRook(Piece piece, ulong blockersXorOccupied)
+        {
+            // The rooks starting position
+            Coordinate from = piece.Square.Coordinate;
+
+            // The value of said square
+            byte square = Board.CoordinateValue[from];
+
+            // Rooks can move to all free squares directly north, east, south and west of its starting square.
+            ulong rookValid = GetRankXRayMoves(square, blockersXorOccupied) | GetFileXRayMoves(square, blockersXorOccupied);
+            return rookValid;
+        }
+
         #endregion
 
         #region Bishop Move Generation
@@ -575,10 +596,43 @@ namespace Chess
 
                 if (isPseudoMoves)
                     moves = moves | (ulong)1 << blockerSquare;
-                Trace.WriteLine($"Blocker square for {Board.SquareDict[Board.CoordinateValue.FirstOrDefault(c => c.Value == square).Key].Piece} on {Board.CoordinateValue.FirstOrDefault(c => c.Value == square).Key}: \n" + BitBoards.BinaryMatrix((ulong) 1 << blockerSquare));
             }
 
             return moves;
+        }
+
+        private ulong GetPositiveXRayMoves(int rayDirection, byte square, ulong blockersXorOccupied)
+        {
+            ulong moves = Ray.Rays[rayDirection][square];
+            ulong blocker = blocker = moves & blockersXorOccupied; // moves on an empty board AND'ed with the current bitboard of all pieces.
+
+            // if this direction is eventually blocked off by a piece.
+            if (blocker != 0)
+            {
+                // using forward bitscan to find the least significant bit
+                int blockerSquare = BitHelper.GetLeastSignificant1Bit(blocker);
+
+                moves = moves ^ Ray.Rays[rayDirection][blockerSquare];
+            }
+
+            return moves | GetPositiveMoves(rayDirection, square, false); // DEBUG: Try and add the moveset and xray moveset together, to get a complete picture of all squares that can be reached through the first blocker.
+        }
+
+        private ulong GetNegativeXRayMoves(int rayDirection, byte square, ulong blockersXorOccupied)
+        {
+            ulong moves = Ray.Rays[rayDirection][square];
+            ulong blocker = moves & blockersXorOccupied;
+
+            // if this direction is eventually blocked off by a piece.
+            if (blocker != 0)
+            {
+                // using forward bitscan to find the least significant bit
+                int blockerSquare = BitHelper.GetMostSignificant1Bit(blocker);
+
+                moves = moves ^ Ray.Rays[rayDirection][blockerSquare];
+            }
+
+            return moves | GetNegativeMoves(rayDirection, square, false); // DEBUG: Try and add the moveset and xray moveset together, to get a complete picture of all squares that can be reached through the first blocker.
         }
         #endregion
 
@@ -607,6 +661,36 @@ namespace Chess
         {
             ulong northMoves = GetPositiveMoves(Ray.North, square, isPseudoMoves);
             ulong southMoves = GetNegativeMoves(Ray.South, square, isPseudoMoves);
+
+            ulong moves = northMoves | southMoves;
+            return moves;
+        }
+
+        /// <summary>
+        /// Get the x-ray'd moves for ranks.
+        /// </summary>
+        /// <param name="square"></param>
+        /// <param name="blockersXorOccupied"></param>
+        /// <returns></returns>
+        private ulong GetRankXRayMoves(byte square, ulong blockersXorOccupied)
+        {
+            ulong westMoves = GetPositiveXRayMoves(Ray.West, square, blockersXorOccupied);
+            ulong eastMoves = GetNegativeXRayMoves(Ray.East, square, blockersXorOccupied);
+
+            ulong moves = eastMoves | westMoves;
+            return moves;
+        }
+
+        /// <summary>
+        /// Get the x-ray'd moves for files.
+        /// </summary>
+        /// <param name="square"></param>
+        /// <param name="blockersXorOccupied"></param>
+        /// <returns></returns>
+        private ulong GetFileXRayMoves(byte square, ulong blockersXorOccupied)
+        {
+            ulong northMoves = GetPositiveXRayMoves(Ray.North, square, blockersXorOccupied);
+            ulong southMoves = GetNegativeXRayMoves(Ray.South, square, blockersXorOccupied);
 
             ulong moves = northMoves | southMoves;
             return moves;
@@ -657,7 +741,20 @@ namespace Chess
 
         #endregion
 
-        // TODO: Currently only checks pseudo legality.
+        #region Get Xray Attacks (attacks through the first blocker).
+        public ulong GetXRayForRook(Piece piece)
+        {
+            ulong attacks = GetMovesForRook(piece, false);
+            ulong blockers = BitBoards.BitBoardDict[Constants.bbSquaresOccupied] & attacks;
+            return attacks ^ GenerateXRayMovesForRook(piece, blockers ^ BitBoards.BitBoardDict[Constants.bbSquaresOccupied]);
+        }
+
+        public ulong GetXRayForBishop(Piece piece)
+        {
+            return 0x00000f06; // lol
+        }
+        #endregion
+
         #region Check legality of move
 
         /// <summary>
@@ -678,7 +775,27 @@ namespace Chess
 
         #endregion
 
-        #region Get which pieces are under attack
+        #region Get which pieces are under attack, pinned etc.
+
+        // Get attacksets to check if a piece is pinned
+        public Dictionary<Piece, ulong> GetPins(Piece piece)
+        {
+            // Get the opponents attackset, to make sure king doesn't move into check
+            Dictionary<Piece, ulong> attacksets = new Dictionary<Piece, ulong>();
+
+            foreach (Piece p in (piece.Color == Color.White ? Board.Pieces.Where(p => p.Color == Color.Black) : Board.Pieces.Where(p => p.Color == Color.White)))
+            {
+                // Only rooks, bishops and queens can pin pieces. Queens have two move directions, though, and are treated separately.
+                if (p.Type != PieceType.Pawn && p.Type != PieceType.Knight && p.Type != PieceType.King && p.Type != PieceType.Queen)
+                    attacksets[p] = p.PseudoMoveset;
+                else if (p.Type == PieceType.Queen)
+                {
+                    Queen qp = p as Queen;
+                }
+            }
+
+            return attacksets;
+        }
 
         // Is king under attack ? AKA check for check
         public Piece? GetCheckingPiece()

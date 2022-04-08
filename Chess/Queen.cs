@@ -10,6 +10,9 @@ namespace Chess
 {
     internal class Queen : Piece
     {
+        public ulong PseudoMovesetDiagonal { get; set; }
+        public ulong PseudoMovesetStraight { get; set; }
+
         public Queen(double topPos, double leftPos, Color color)
         {
             Type = PieceType.Queen;

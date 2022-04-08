@@ -86,7 +86,7 @@ namespace Chess
         public const ulong WhiteCastlingShortClear = 0xFFFFFFFFFFFFFFF9;
         public const ulong WhiteCastlingLongClear = 0xFFFFFFFFFFFFFF9F;
         public const ulong BlackCastlingShortClear = 0xF9FFFFFFFFFFFFFF;
-        public const ulong BlackCastlingLongClear = 0x9FFFFFFFFFFFFFFF;
+        public const ulong BlackCastlingLongClear = 0xCFFFFFFFFFFFFFFF;
         #endregion
     }
 }

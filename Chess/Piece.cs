@@ -55,5 +55,6 @@ namespace Chess
 
         // Pseudolegal moves for piece
         public ulong PseudoMoveset { get; set; }
+        public ulong XRayAttacks { get; set; }
     }
 }
